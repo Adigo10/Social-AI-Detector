@@ -160,10 +160,7 @@ def main():
     print(f"  Train index size: {train_index.ntotal}")
 
     # Load or derive the local-to-corpus index mapping
-    if os.path.exists(TRAIN_INDICES_PATH):
-        local_to_corpus = list(np.load(TRAIN_INDICES_PATH))
-    else:
-        local_to_corpus = train_indices
+    local_to_corpus = list(np.load(TRAIN_INDICES_PATH))
     assert train_index.ntotal == len(local_to_corpus), (
         f"Index/mapping mismatch: index has {train_index.ntotal} vectors "
         f"but mapping has {len(local_to_corpus)} entries"
