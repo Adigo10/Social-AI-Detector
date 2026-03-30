@@ -7,10 +7,15 @@ import glob
 from collections import Counter
 
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 RAW_DIR = os.path.join("data", "raw")
 PROCESSED_DIR = os.path.join("data", "processed")
 OUTPUT_PATH = os.path.join(PROCESSED_DIR, "corpus.jsonl")
+RAID_OUTPUT_PATH = os.path.join(PROCESSED_DIR, "raid_eval.jsonl")
+SPLITS_PATH = os.path.join(PROCESSED_DIR, "splits.json")
+
+RANDOM_SEED = 42
 
 URL_PATTERN = re.compile(r"https?://\S+|www\.\S+")
 WHITESPACE_PATTERN = re.compile(r"\s+")
@@ -202,22 +207,50 @@ def process_raid():
     return records
 
 
+def create_splits(records):
+    """Create stratified 70/15/15 train/val/test split."""
+    ids = [r["id"] for r in records]
+    labels = [r["label"] for r in records]
+
+    # First split: 70% train, 30% remainder
+    train_ids, rem_ids, train_labels, rem_labels = train_test_split(
+        ids, labels, test_size=0.30, random_state=RANDOM_SEED, stratify=labels
+    )
+
+    # Second split: 50/50 of remainder → 15% val, 15% test
+    val_ids, test_ids, _, _ = train_test_split(
+        rem_ids, rem_labels, test_size=0.50, random_state=RANDOM_SEED, stratify=rem_labels
+    )
+
+    splits = {}
+    for id_ in train_ids:
+        splits[str(id_)] = "train"
+    for id_ in val_ids:
+        splits[str(id_)] = "val"
+    for id_ in test_ids:
+        splits[str(id_)] = "test"
+
+    return splits
+
+
 def main():
     os.makedirs(PROCESSED_DIR, exist_ok=True)
 
     print("Starting preprocessing...")
 
-    # Collect records from all datasets
+    # Collect records from training/retrieval datasets (NOT RAID)
     all_records = []
     all_records.extend(process_multisocial())
     all_records.extend(process_hc3())
-    all_records.extend(process_raid())
+
+    # Process RAID separately (adversarial eval only)
+    raid_records = process_raid()
 
     if not all_records:
         print("\nERROR: No records collected. Check that data/raw/ has downloaded files.")
         return
 
-    # Assign sequential IDs and write corpus.jsonl
+    # Assign sequential IDs and write corpus.jsonl (no RAID)
     print(f"\n--- Writing {OUTPUT_PATH} ---")
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         for i, record in enumerate(all_records):
@@ -225,7 +258,29 @@ def main():
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
     total = len(all_records)
-    print(f"\nTotal records: {total}")
+    print(f"\nCorpus records: {total}")
+
+    # Write RAID eval set separately
+    if raid_records:
+        print(f"\n--- Writing {RAID_OUTPUT_PATH} (adversarial eval only) ---")
+        with open(RAID_OUTPUT_PATH, "w", encoding="utf-8") as f:
+            for i, record in enumerate(raid_records):
+                record["id"] = i
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        print(f"  RAID eval records: {len(raid_records)}")
+
+    # Create stratified 70/15/15 split
+    print(f"\n--- Creating train/val/test splits (70/15/15) ---")
+    splits = create_splits(all_records)
+
+    with open(SPLITS_PATH, "w", encoding="utf-8") as f:
+        json.dump(splits, f)
+
+    split_counts = Counter(splits.values())
+    for split_name in ("train", "val", "test"):
+        count = split_counts.get(split_name, 0)
+        print(f"  {split_name}: {count} ({100*count/total:.1f}%)")
+    print(f"  Saved: {SPLITS_PATH}")
 
     # Statistics
     label_counts = Counter(r["label"] for r in all_records)

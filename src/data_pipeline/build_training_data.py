@@ -1,17 +1,16 @@
 """Step 5: Generate training data with and without RAG context."""
 
-import os
 import json
+import os
 
-import numpy as np
 import faiss
+import numpy as np
 
 PROCESSED_DIR = os.path.join("data", "processed")
 CORPUS_PATH = os.path.join(PROCESSED_DIR, "corpus.jsonl")
 EMBEDDINGS_PATH = os.path.join(PROCESSED_DIR, "embeddings.npy")
 INDEX_PATH = os.path.join(PROCESSED_DIR, "corpus.index")
-OUTPUT_WITH_RAG = os.path.join(PROCESSED_DIR, "train_with_rag.jsonl")
-OUTPUT_WITHOUT_RAG = os.path.join(PROCESSED_DIR, "train_without_rag.jsonl")
+SPLITS_PATH = os.path.join(PROCESSED_DIR, "splits.json")
 
 K_SEARCH = 11  # 10 neighbors + self
 K_RAG_CONTEXT = 5
@@ -52,35 +51,18 @@ def build_plain_instruction(target_text):
     return instruction
 
 
-def main():
-    # Load corpus
-    print("Loading corpus...")
-    corpus = []
-    with open(CORPUS_PATH, "r", encoding="utf-8") as f:
-        for line in f:
-            corpus.append(json.loads(line))
-    total = len(corpus)
-    print(f"  Corpus size: {total}")
+def generate_split_data(split_name, record_indices, corpus, embeddings, index, total):
+    """Generate RAG and plain training data for a single split."""
+    rag_path = os.path.join(PROCESSED_DIR, f"{split_name}_with_rag.jsonl")
+    plain_path = os.path.join(PROCESSED_DIR, f"{split_name}_without_rag.jsonl")
+    count = len(record_indices)
 
-    # Load embeddings and index
-    print("Loading embeddings and FAISS index...")
-    embeddings = np.load(EMBEDDINGS_PATH)
-    faiss.normalize_L2(embeddings)
-    index = faiss.read_index(INDEX_PATH)
-    print(f"  Embeddings shape: {embeddings.shape}")
-    print(f"  Index size: {index.ntotal}")
-
-    assert total == embeddings.shape[0] == index.ntotal, (
-        f"Size mismatch: corpus={total}, embeddings={embeddings.shape[0]}, index={index.ntotal}"
-    )
-
-    # Generate training data
-    print(f"\nGenerating training data...")
+    print(f"\n  Generating {split_name} split ({count} records)...")
     with (
-        open(OUTPUT_WITH_RAG, "w", encoding="utf-8") as f_rag,
-        open(OUTPUT_WITHOUT_RAG, "w", encoding="utf-8") as f_plain,
+        open(rag_path, "w", encoding="utf-8") as f_rag,
+        open(plain_path, "w", encoding="utf-8") as f_plain,
     ):
-        for i in range(total):
+        for progress, i in enumerate(record_indices):
             record = corpus[i]
             target_text = record["text"]
             target_label = record["label"]
@@ -112,14 +94,61 @@ def main():
                 "output": target_label,
             }, ensure_ascii=False) + "\n")
 
-            if (i + 1) % PROGRESS_INTERVAL == 0 or i == total - 1:
-                print(f"  [{i+1}/{total}] {100*(i+1)/total:.1f}%")
+            if (progress + 1) % PROGRESS_INTERVAL == 0 or progress == count - 1:
+                print(f"    [{progress+1}/{count}] {100*(progress+1)/count:.1f}%")
 
-    rag_size = os.path.getsize(OUTPUT_WITH_RAG) / (1024 * 1024)
-    plain_size = os.path.getsize(OUTPUT_WITHOUT_RAG) / (1024 * 1024)
+    rag_size = os.path.getsize(rag_path) / (1024 * 1024)
+    plain_size = os.path.getsize(plain_path) / (1024 * 1024)
+    print(f"    {rag_path} ({rag_size:.1f} MB, {count} records)")
+    print(f"    {plain_path} ({plain_size:.1f} MB, {count} records)")
+
+
+def main():
+    # Load corpus
+    print("Loading corpus...")
+    corpus = []
+    with open(CORPUS_PATH, "r", encoding="utf-8") as f:
+        for line in f:
+            corpus.append(json.loads(line))
+    total = len(corpus)
+    print(f"  Corpus size: {total}")
+
+    # Load splits
+    print("Loading splits...")
+    with open(SPLITS_PATH, "r", encoding="utf-8") as f:
+        splits = json.load(f)
+    print(f"  Split assignments: {len(splits)}")
+
+    # Group corpus indices by split
+    split_indices = {"train": [], "val": [], "test": []}
+    for i, record in enumerate(corpus):
+        split_name = splits.get(str(record["id"]))
+        if split_name in split_indices:
+            split_indices[split_name].append(i)
+    for name, indices in split_indices.items():
+        print(f"  {name}: {len(indices)} records")
+
+    # Load embeddings and index
+    print("Loading embeddings and FAISS index...")
+    embeddings = np.load(EMBEDDINGS_PATH)
+    faiss.normalize_L2(embeddings)
+    index = faiss.read_index(INDEX_PATH)
+    print(f"  Embeddings shape: {embeddings.shape}")
+    print(f"  Index size: {index.ntotal}")
+
+    assert total == embeddings.shape[0] == index.ntotal, (
+        f"Size mismatch: corpus={total}, embeddings={embeddings.shape[0]}, index={index.ntotal}"
+    )
+
+    # Generate data for each split
+    print(f"\nGenerating split data...")
+    for split_name in ("train", "val", "test"):
+        generate_split_data(
+            split_name, split_indices[split_name],
+            corpus, embeddings, index, total,
+        )
+
     print(f"\nDone!")
-    print(f"  {OUTPUT_WITH_RAG} ({rag_size:.1f} MB, {total} records)")
-    print(f"  {OUTPUT_WITHOUT_RAG} ({plain_size:.1f} MB, {total} records)")
 
 
 if __name__ == "__main__":

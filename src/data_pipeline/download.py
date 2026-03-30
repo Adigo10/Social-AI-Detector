@@ -1,20 +1,21 @@
 """Step 1: Download datasets (MultiSocial, HC3, RAID) to data/raw/."""
 
-import os
 import json
+import os
+
 import requests
-from tqdm import tqdm
-from dotenv import load_dotenv
 from datasets import load_dataset
+from dotenv import load_dotenv
+from tqdm import tqdm
 
 load_dotenv()
 
 RAW_DIR = os.path.join("data", "raw")
 
 
-def download_file(url, dest_path, description="Downloading"):
+def download_file(url, dest_path, description="Downloading", headers=None):
     """Stream-download a file with progress bar."""
-    resp = requests.get(url, stream=True, timeout=300)
+    resp = requests.get(url, stream=True, timeout=300, headers=headers)
     resp.raise_for_status()
     total = int(resp.headers.get("content-length", 0))
     with open(dest_path, "wb") as f, tqdm(
@@ -97,7 +98,7 @@ def download_multisocial():
             if os.path.exists(dest):
                 print(f"  Skipping {key} (already exists)")
                 continue
-            download_file(url, dest, description=key)
+            download_file(url, dest, description=key, headers=headers)
 
 
 def download_hc3():
