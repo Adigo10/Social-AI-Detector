@@ -1,0 +1,120 @@
+# ============================================================
+# Claude Code
+# ============================================================
+.claude/settings.local.json
+.omc/
+
+# ============================================================
+# Environment & Secrets
+# ============================================================
+.env
+.env.local
+.env.*.local
+.env.development
+.env.staging
+.env.production
+*.pem
+*.key
+
+# ============================================================
+# Python
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+nosetests.xml
+coverage.xml
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# ============================================================
+# TypeScript / Node.js
+# ============================================================
+node_modules/
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# Compiled output
+*.js.map
+*.d.ts.map
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Package manager locks (choose one)
+# yarn.lock
+# pnpm-lock.yaml
+
+# Cache
+.eslintcache
+.tsbuildinfo
+tsconfig.tsbuildinfo
+.cache/
+
+# ============================================================
+# OS
+# ============================================================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# ============================================================
+# Editor / IDE
+# ============================================================
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ============================================================
+# Misc
+# ============================================================
+logs/
+*.log
+*.tmp
+*.temp
+.turbo/
+
+# docs
+docs/*.ko.md
