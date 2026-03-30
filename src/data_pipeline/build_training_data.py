@@ -64,12 +64,11 @@ def build_train_only_index(embeddings, train_indices):
 
 
 def generate_split_data(split_name, record_indices, corpus, embeddings,
-                        search_index, idx_map, self_corpus_idx):
+                        search_index, idx_map):
     """Generate RAG and plain training data for a single split.
 
     search_index: FAISS index to search for neighbors (train-only)
     idx_map: maps search_index positions back to corpus indices
-    self_corpus_idx: set of corpus indices in this split (for self-exclusion)
     """
     rag_path = os.path.join(PROCESSED_DIR, f"{split_name}_with_rag.jsonl")
     plain_path = os.path.join(PROCESSED_DIR, f"{split_name}_without_rag.jsonl")
@@ -96,8 +95,9 @@ def generate_split_data(split_name, record_indices, corpus, embeddings,
                 if local_idx < 0 or local_idx >= len(idx_map):
                     continue
                 corpus_idx = idx_map[local_idx]
+                # For train queries, skip self. For val/test, self is never in the train index.
                 if corpus_idx == i:
-                    continue  # exclude self
+                    continue
                 neighbor = corpus[corpus_idx]
                 neighbors.append((neighbor["text"], neighbor["label"]))
                 if len(neighbors) >= K_SEARCH - 1:
@@ -174,7 +174,6 @@ def main():
         generate_split_data(
             split_name, split_indices[split_name],
             corpus, embeddings, train_index, idx_map,
-            set(split_indices[split_name]),
         )
 
     print(f"\nDone!")

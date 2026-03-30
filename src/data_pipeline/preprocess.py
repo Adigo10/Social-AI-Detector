@@ -1,9 +1,9 @@
 """Step 2: Preprocess raw datasets into unified corpus.jsonl."""
 
+import glob
+import json
 import os
 import re
-import json
-import glob
 from collections import Counter
 
 import pandas as pd
@@ -46,6 +46,7 @@ def process_multisocial():
         return []
 
     records = []
+    unknown_labels = Counter()
     for csv_path in csv_files:
         print(f"  Reading: {csv_path}")
         df = pd.read_csv(csv_path, low_memory=False)
@@ -83,7 +84,9 @@ def process_multisocial():
                 elif raw_label in ("human", "original", "real", "0", "false", "no"):
                     label = "human"
                 else:
+                    # Fallback heuristic — track unrecognized values
                     label = "ai" if "ai" in raw_label or "gen" in raw_label else "human"
+                    unknown_labels[raw_label] += 1
             else:
                 label = "human"
 
@@ -97,6 +100,12 @@ def process_multisocial():
                 "platform": platform,
                 "dataset": "multisocial",
             })
+
+    if unknown_labels:
+        print(f"  WARNING: {sum(unknown_labels.values())} records had unrecognized labels "
+              f"(mapped via heuristic fallback):")
+        for lbl, cnt in unknown_labels.most_common(10):
+            print(f"    '{lbl}': {cnt}")
 
     print(f"  MultiSocial records after cleaning: {len(records)}")
     return records

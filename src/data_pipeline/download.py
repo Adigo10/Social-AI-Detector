@@ -112,7 +112,11 @@ def download_hc3():
         print(f"  Skipping (already exists): {dest_path}")
         return
 
-    ds = load_dataset("Hello-SimpleAI/HC3", "all", trust_remote_code=True)
+    ds = load_dataset(
+        "Hello-SimpleAI/HC3", "all",
+        trust_remote_code=True,
+        revision="eee4b68e0ca157c5e4ad38afaca1ec830b0c7e8f",
+    )
     print(f"  Loaded splits: {list(ds.keys())}")
 
     count = 0

@@ -1,8 +1,8 @@
 """Step 3: Generate embeddings via Gemini API with checkpoint/resume."""
 
+import json
 import os
 import sys
-import json
 import time
 
 import numpy as np
@@ -47,6 +47,9 @@ def load_checkpoint():
 
 def save_checkpoint(embeddings, next_index):
     """Save checkpoint with current progress."""
+    assert embeddings.shape[0] == next_index, (
+        f"Checkpoint alignment error: {embeddings.shape[0]} embeddings but next_index={next_index}"
+    )
     np.savez(CHECKPOINT_PATH, embeddings=embeddings, next_index=next_index)
     print(f"  Checkpoint saved at index {next_index}")
 
@@ -133,6 +136,9 @@ def main():
 
     # Save final output
     arr = np.array(embeddings, dtype=np.float32)
+    assert arr.shape[0] == total, (
+        f"Embedding count mismatch: expected {total}, got {arr.shape[0]}"
+    )
     np.save(OUTPUT_PATH, arr)
 
     # Remove checkpoint
