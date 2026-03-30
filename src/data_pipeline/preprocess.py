@@ -109,8 +109,8 @@ def process_multisocial():
             })
 
     if unknown_labels:
-        print(f"  WARNING: {sum(unknown_labels.values())} records had unrecognized labels "
-              f"(mapped via heuristic fallback):")
+        print(f"  WARNING: {sum(unknown_labels.values())} records with unrecognized labels "
+              f"were skipped:")
         for lbl, cnt in unknown_labels.most_common(10):
             print(f"    '{lbl}': {cnt}")
 
@@ -131,7 +131,6 @@ def process_hc3():
     with open(hc3_path, "r", encoding="utf-8") as f:
         for line in f:
             row = json.loads(line)
-            question = str(row.get("question", "")).strip()
 
             # Process human answers (answer only — no question prefix to avoid
             # format mismatch with social media texts in MultiSocial)

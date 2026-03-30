@@ -95,6 +95,10 @@ def main():
     existing_embeddings, start_index = load_checkpoint()
     embeddings = np.zeros((total, DIMENSIONS), dtype=np.float32)
     if existing_embeddings is not None:
+        assert existing_embeddings.shape == (start_index, DIMENSIONS), (
+            f"Checkpoint shape mismatch: expected ({start_index}, {DIMENSIONS}), "
+            f"got {existing_embeddings.shape}. Delete checkpoint and re-run."
+        )
         embeddings[:start_index] = existing_embeddings
 
     start_time = time.time()
@@ -137,7 +141,7 @@ def main():
     assert embeddings.shape[0] == total, (
         f"Embedding count mismatch: expected {total}, got {embeddings.shape[0]}"
     )
-    np.save(OUTPUT_PATH, arr)
+    np.save(OUTPUT_PATH, embeddings)
 
     # Remove checkpoint
     if os.path.exists(CHECKPOINT_PATH):
@@ -147,7 +151,7 @@ def main():
     elapsed = time.time() - start_time
     size_mb = os.path.getsize(OUTPUT_PATH) / (1024 * 1024)
     print(f"\nEmbedding complete!")
-    print(f"  Shape: {arr.shape}")
+    print(f"  Shape: {embeddings.shape}")
     print(f"  Dtype: {arr.dtype}")
     print(f"  File: {OUTPUT_PATH} ({size_mb:.1f} MB)")
     print(f"  Total time: {elapsed/60:.1f} min")

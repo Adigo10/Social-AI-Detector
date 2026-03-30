@@ -155,7 +155,6 @@ def main():
     # Load pre-built train-only FAISS index (from build_index.py)
     # All splits retrieve neighbors exclusively from the training set,
     # so val/test evaluation is not inflated by held-out examples.
-    train_indices = split_indices["train"]
     print(f"\nLoading train-only FAISS index from {INDEX_PATH}...")
     train_index = faiss.read_index(INDEX_PATH)
     print(f"  Train index size: {train_index.ntotal}")
