@@ -13,11 +13,14 @@ import os
 import faiss
 import numpy as np
 
-PROCESSED_DIR = os.path.join("data", "processed")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+PROCESSED_DIR = os.path.join(PROJECT_ROOT, "data", "processed")
 EMBEDDINGS_PATH = os.path.join(PROCESSED_DIR, "embeddings.npy")
 CORPUS_PATH = os.path.join(PROCESSED_DIR, "corpus.jsonl")
 SPLITS_PATH = os.path.join(PROCESSED_DIR, "splits.json")
 INDEX_PATH = os.path.join(PROCESSED_DIR, "corpus.index")
+TRAIN_INDICES_PATH = os.path.join(PROCESSED_DIR, "train_indices.npy")
 DIMENSIONS = 768
 
 
@@ -57,10 +60,12 @@ def main():
     index.add(train_embeddings)
     print(f"  Index size: {index.ntotal} vectors (train only)")
 
-    # Save index
+    # Save index and train indices mapping (for downstream consumers)
     faiss.write_index(index, INDEX_PATH)
+    np.save(TRAIN_INDICES_PATH, np.array(train_indices, dtype=np.int64))
     size_mb = os.path.getsize(INDEX_PATH) / (1024 * 1024)
     print(f"  Saved: {INDEX_PATH} ({size_mb:.1f} MB)")
+    print(f"  Saved: {TRAIN_INDICES_PATH} ({len(train_indices)} indices)")
 
     # Sanity check: query the first train vector
     print("\n--- Sanity Check ---")

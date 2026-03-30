@@ -10,7 +10,9 @@ from tqdm import tqdm
 
 load_dotenv()
 
-RAW_DIR = os.path.join("data", "raw")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+RAW_DIR = os.path.join(PROJECT_ROOT, "data", "raw")
 
 
 def download_file(url, dest_path, description="Downloading", headers=None):
@@ -24,7 +26,14 @@ def download_file(url, dest_path, description="Downloading", headers=None):
         for chunk in resp.iter_content(chunk_size=8192):
             f.write(chunk)
             bar.update(len(chunk))
-    size_mb = os.path.getsize(dest_path) / (1024 * 1024)
+    actual_size = os.path.getsize(dest_path)
+    if total > 0 and actual_size != total:
+        os.remove(dest_path)
+        raise RuntimeError(
+            f"Download incomplete for {dest_path}: "
+            f"expected {total} bytes, got {actual_size}"
+        )
+    size_mb = actual_size / (1024 * 1024)
     print(f"  Saved: {dest_path} ({size_mb:.1f} MB)")
 
 

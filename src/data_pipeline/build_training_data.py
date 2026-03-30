@@ -6,10 +6,13 @@ import os
 import faiss
 import numpy as np
 
-PROCESSED_DIR = os.path.join("data", "processed")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+PROCESSED_DIR = os.path.join(PROJECT_ROOT, "data", "processed")
 CORPUS_PATH = os.path.join(PROCESSED_DIR, "corpus.jsonl")
 EMBEDDINGS_PATH = os.path.join(PROCESSED_DIR, "embeddings.npy")
 INDEX_PATH = os.path.join(PROCESSED_DIR, "corpus.index")
+TRAIN_INDICES_PATH = os.path.join(PROCESSED_DIR, "train_indices.npy")
 SPLITS_PATH = os.path.join(PROCESSED_DIR, "splits.json")
 
 K_SEARCH = 11  # 10 neighbors + self
@@ -51,24 +54,12 @@ def build_plain_instruction(target_text):
     return instruction
 
 
-def build_train_only_index(embeddings, train_indices):
-    """Build a FAISS index containing only training split vectors.
-
-    Returns (train_index, idx_map) where idx_map[train_local_pos] = corpus_global_idx.
-    """
-    train_embeds = embeddings[train_indices].copy()
-    faiss.normalize_L2(train_embeds)
-    index = faiss.IndexFlatIP(train_embeds.shape[1])
-    index.add(train_embeds)
-    return index, train_indices
-
-
 def generate_split_data(split_name, record_indices, corpus, embeddings,
-                        search_index, idx_map):
+                        search_index, local_to_corpus):
     """Generate RAG and plain training data for a single split.
 
     search_index: FAISS index to search for neighbors (train-only)
-    idx_map: maps search_index positions back to corpus indices
+    local_to_corpus: list mapping search_index positions back to corpus indices
     """
     rag_path = os.path.join(PROCESSED_DIR, f"{split_name}_with_rag.jsonl")
     plain_path = os.path.join(PROCESSED_DIR, f"{split_name}_without_rag.jsonl")
@@ -92,9 +83,9 @@ def generate_split_data(split_name, record_indices, corpus, embeddings,
             # Collect neighbors excluding self (map back to corpus indices)
             neighbors = []
             for local_idx in indices[0]:
-                if local_idx < 0 or local_idx >= len(idx_map):
+                if local_idx < 0 or local_idx >= len(local_to_corpus):
                     continue
-                corpus_idx = idx_map[local_idx]
+                corpus_idx = local_to_corpus[local_idx]
                 # For train queries, skip self. For val/test, self is never in the train index.
                 if corpus_idx == i:
                     continue
@@ -160,20 +151,30 @@ def main():
         f"Size mismatch: corpus={total}, embeddings={embeddings.shape[0]}"
     )
 
-    # Build train-only FAISS index for clean retrieval
+    # Load pre-built train-only FAISS index (from build_index.py)
     # All splits retrieve neighbors exclusively from the training set,
     # so val/test evaluation is not inflated by held-out examples.
     train_indices = split_indices["train"]
-    print(f"\nBuilding train-only FAISS index ({len(train_indices)} vectors)...")
-    train_index, idx_map = build_train_only_index(embeddings, train_indices)
+    print(f"\nLoading train-only FAISS index from {INDEX_PATH}...")
+    train_index = faiss.read_index(INDEX_PATH)
     print(f"  Train index size: {train_index.ntotal}")
+
+    # Load or derive the local-to-corpus index mapping
+    if os.path.exists(TRAIN_INDICES_PATH):
+        local_to_corpus = list(np.load(TRAIN_INDICES_PATH))
+    else:
+        local_to_corpus = train_indices
+    assert train_index.ntotal == len(local_to_corpus), (
+        f"Index/mapping mismatch: index has {train_index.ntotal} vectors "
+        f"but mapping has {len(local_to_corpus)} entries"
+    )
 
     # Generate data for each split (all search against train-only index)
     print(f"\nGenerating split data...")
     for split_name in ("train", "val", "test"):
         generate_split_data(
             split_name, split_indices[split_name],
-            corpus, embeddings, train_index, idx_map,
+            corpus, embeddings, train_index, local_to_corpus,
         )
 
     print(f"\nDone!")

@@ -10,7 +10,9 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-PROCESSED_DIR = os.path.join("data", "processed")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+PROCESSED_DIR = os.path.join(PROJECT_ROOT, "data", "processed")
 CORPUS_PATH = os.path.join(PROCESSED_DIR, "corpus.jsonl")
 OUTPUT_PATH = os.path.join(PROCESSED_DIR, "embeddings.npy")
 CHECKPOINT_PATH = os.path.join(PROCESSED_DIR, "embeddings_checkpoint.npz")
