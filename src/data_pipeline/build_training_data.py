@@ -51,8 +51,26 @@ def build_plain_instruction(target_text):
     return instruction
 
 
-def generate_split_data(split_name, record_indices, corpus, embeddings, index, total):
-    """Generate RAG and plain training data for a single split."""
+def build_train_only_index(embeddings, train_indices):
+    """Build a FAISS index containing only training split vectors.
+
+    Returns (train_index, idx_map) where idx_map[train_local_pos] = corpus_global_idx.
+    """
+    train_embeds = embeddings[train_indices].copy()
+    faiss.normalize_L2(train_embeds)
+    index = faiss.IndexFlatIP(train_embeds.shape[1])
+    index.add(train_embeds)
+    return index, train_indices
+
+
+def generate_split_data(split_name, record_indices, corpus, embeddings,
+                        search_index, idx_map, self_corpus_idx):
+    """Generate RAG and plain training data for a single split.
+
+    search_index: FAISS index to search for neighbors (train-only)
+    idx_map: maps search_index positions back to corpus indices
+    self_corpus_idx: set of corpus indices in this split (for self-exclusion)
+    """
     rag_path = os.path.join(PROCESSED_DIR, f"{split_name}_with_rag.jsonl")
     plain_path = os.path.join(PROCESSED_DIR, f"{split_name}_without_rag.jsonl")
     count = len(record_indices)
@@ -67,16 +85,21 @@ def generate_split_data(split_name, record_indices, corpus, embeddings, index, t
             target_text = record["text"]
             target_label = record["label"]
 
-            # Search for neighbors
+            # Search for neighbors in the train-only index
             query = embeddings[i : i + 1].copy()
-            scores, indices = index.search(query, K_SEARCH)
+            faiss.normalize_L2(query)
+            scores, indices = search_index.search(query, K_SEARCH)
 
-            # Collect neighbors excluding self
+            # Collect neighbors excluding self (map back to corpus indices)
             neighbors = []
-            for idx in indices[0]:
-                if idx != i and idx < total:
-                    neighbor = corpus[idx]
-                    neighbors.append((neighbor["text"], neighbor["label"]))
+            for local_idx in indices[0]:
+                if local_idx < 0 or local_idx >= len(idx_map):
+                    continue
+                corpus_idx = idx_map[local_idx]
+                if corpus_idx == i:
+                    continue  # exclude self
+                neighbor = corpus[corpus_idx]
+                neighbors.append((neighbor["text"], neighbor["label"]))
                 if len(neighbors) >= K_SEARCH - 1:
                     break
 
@@ -128,24 +151,30 @@ def main():
     for name, indices in split_indices.items():
         print(f"  {name}: {len(indices)} records")
 
-    # Load embeddings and index
-    print("Loading embeddings and FAISS index...")
+    # Load embeddings
+    print("Loading embeddings...")
     embeddings = np.load(EMBEDDINGS_PATH)
-    faiss.normalize_L2(embeddings)
-    index = faiss.read_index(INDEX_PATH)
     print(f"  Embeddings shape: {embeddings.shape}")
-    print(f"  Index size: {index.ntotal}")
 
-    assert total == embeddings.shape[0] == index.ntotal, (
-        f"Size mismatch: corpus={total}, embeddings={embeddings.shape[0]}, index={index.ntotal}"
+    assert total == embeddings.shape[0], (
+        f"Size mismatch: corpus={total}, embeddings={embeddings.shape[0]}"
     )
 
-    # Generate data for each split
+    # Build train-only FAISS index for clean retrieval
+    # All splits retrieve neighbors exclusively from the training set,
+    # so val/test evaluation is not inflated by held-out examples.
+    train_indices = split_indices["train"]
+    print(f"\nBuilding train-only FAISS index ({len(train_indices)} vectors)...")
+    train_index, idx_map = build_train_only_index(embeddings, train_indices)
+    print(f"  Train index size: {train_index.ntotal}")
+
+    # Generate data for each split (all search against train-only index)
     print(f"\nGenerating split data...")
     for split_name in ("train", "val", "test"):
         generate_split_data(
             split_name, split_indices[split_name],
-            corpus, embeddings, index, total,
+            corpus, embeddings, train_index, idx_map,
+            set(split_indices[split_name]),
         )
 
     print(f"\nDone!")
