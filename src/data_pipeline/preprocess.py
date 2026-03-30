@@ -92,9 +92,8 @@ def process_multisocial():
                 elif raw_label in ("human", "original", "real", "0", "false", "no"):
                     label = "human"
                 else:
-                    # Fallback heuristic — track unrecognized values
-                    label = "ai" if "ai" in raw_label or "gen" in raw_label else "human"
                     unknown_labels[raw_label] += 1
+                    continue
             else:
                 label = "human"
 
@@ -134,9 +133,10 @@ def process_hc3():
             row = json.loads(line)
             question = str(row.get("question", "")).strip()
 
-            # Process human answers
+            # Process human answers (answer only — no question prefix to avoid
+            # format mismatch with social media texts in MultiSocial)
             for answer in row.get("human_answers", []):
-                text = clean_text(f"{question} {answer}")
+                text = clean_text(answer)
                 if word_count(text) < 5:
                     continue
                 records.append({
@@ -149,7 +149,7 @@ def process_hc3():
 
             # Process ChatGPT answers
             for answer in row.get("chatgpt_answers", []):
-                text = clean_text(f"{question} {answer}")
+                text = clean_text(answer)
                 if word_count(text) < 5:
                     continue
                 records.append({
@@ -211,8 +211,8 @@ def process_raid():
             elif raw_label in ("ai", "generated", "machine", "1", "true", "yes"):
                 label = "ai"
             else:
-                label = "ai"
                 unknown_labels[raw_label] += 1
+                continue
         else:
             # RAID test set: if model column exists, non-null model = AI
             if model_values is not None and pd.notna(model_values[idx]) and str(model_values[idx]).strip():

@@ -27,6 +27,8 @@ def download_file(url, dest_path, description="Downloading", headers=None):
             f.write(chunk)
             bar.update(len(chunk))
     actual_size = os.path.getsize(dest_path)
+    if total == 0:
+        print(f"  WARNING: Server did not send Content-Length — integrity not verified for {dest_path}")
     if total > 0 and actual_size != total:
         os.remove(dest_path)
         raise RuntimeError(

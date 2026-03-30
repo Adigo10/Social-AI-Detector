@@ -91,12 +91,11 @@ def main():
     total = len(texts)
     print(f"Total texts: {total}")
 
-    # Load or initialize embeddings
+    # Load or initialize embeddings (pre-allocated numpy array to avoid OOM)
     existing_embeddings, start_index = load_checkpoint()
+    embeddings = np.zeros((total, DIMENSIONS), dtype=np.float32)
     if existing_embeddings is not None:
-        embeddings = list(existing_embeddings)
-    else:
-        embeddings = []
+        embeddings[:start_index] = existing_embeddings
 
     start_time = time.time()
     processed = start_index
@@ -110,13 +109,12 @@ def main():
         if result is None:
             # All retries failed — save checkpoint and exit
             print(f"\nFATAL: API failed after {MAX_RETRIES} retries at index {i}")
-            if embeddings:
-                arr = np.array(embeddings, dtype=np.float32)
-                save_checkpoint(arr, len(embeddings))
+            if processed > 0:
+                save_checkpoint(embeddings[:processed], processed)
             print("Checkpoint saved. Rerun this script to resume.")
             sys.exit(1)
 
-        embeddings.extend(result)
+        embeddings[i:batch_end] = result
         processed = batch_end
         elapsed = time.time() - start_time
         rate = (processed - start_index) / elapsed if elapsed > 0 else 0
@@ -131,15 +129,13 @@ def main():
 
         # Checkpoint every CHECKPOINT_INTERVAL texts
         if processed % CHECKPOINT_INTERVAL == 0 and processed > start_index:
-            arr = np.array(embeddings, dtype=np.float32)
-            save_checkpoint(arr, processed)
+            save_checkpoint(embeddings[:processed], processed)
 
         time.sleep(SLEEP_BETWEEN_CALLS)
 
     # Save final output
-    arr = np.array(embeddings, dtype=np.float32)
-    assert arr.shape[0] == total, (
-        f"Embedding count mismatch: expected {total}, got {arr.shape[0]}"
+    assert embeddings.shape[0] == total, (
+        f"Embedding count mismatch: expected {total}, got {embeddings.shape[0]}"
     )
     np.save(OUTPUT_PATH, arr)
 

@@ -15,7 +15,8 @@ INDEX_PATH = os.path.join(PROCESSED_DIR, "corpus.index")
 TRAIN_INDICES_PATH = os.path.join(PROCESSED_DIR, "train_indices.npy")
 SPLITS_PATH = os.path.join(PROCESSED_DIR, "splits.json")
 
-K_SEARCH = 11  # 10 neighbors + self
+K_NEIGHBORS = 10
+K_SEARCH = K_NEIGHBORS + 1  # extra slot for self-exclusion
 K_RAG_CONTEXT = 5
 MAX_NEIGHBOR_CHARS = 300
 PROGRESS_INTERVAL = 10_000
@@ -91,7 +92,7 @@ def generate_split_data(split_name, record_indices, corpus, embeddings,
                     continue
                 neighbor = corpus[corpus_idx]
                 neighbors.append((neighbor["text"], neighbor["label"]))
-                if len(neighbors) >= K_SEARCH - 1:
+                if len(neighbors) >= K_NEIGHBORS:
                     break
 
             # With RAG
