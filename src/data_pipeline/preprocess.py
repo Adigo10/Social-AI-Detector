@@ -1,0 +1,252 @@
+"""Step 2: Preprocess raw datasets into unified corpus.jsonl."""
+
+import os
+import re
+import json
+import glob
+from collections import Counter
+
+import pandas as pd
+
+RAW_DIR = os.path.join("data", "raw")
+PROCESSED_DIR = os.path.join("data", "processed")
+OUTPUT_PATH = os.path.join(PROCESSED_DIR, "corpus.jsonl")
+
+URL_PATTERN = re.compile(r"https?://\S+|www\.\S+")
+WHITESPACE_PATTERN = re.compile(r"\s+")
+
+
+def clean_text(text):
+    """Replace URLs with [URL], collapse whitespace, strip."""
+    if not isinstance(text, str):
+        return ""
+    text = URL_PATTERN.sub("[URL]", text)
+    text = WHITESPACE_PATTERN.sub(" ", text)
+    return text.strip()
+
+
+def word_count(text):
+    return len(text.split())
+
+
+def process_multisocial():
+    """Process MultiSocial CSV files."""
+    print("\n--- Processing MultiSocial ---")
+    csv_dir = os.path.join(RAW_DIR, "multisocial")
+    csv_files = sorted(glob.glob(os.path.join(csv_dir, "*.csv")) +
+                       glob.glob(os.path.join(csv_dir, "*.csv.gz")))
+
+    if not csv_files:
+        print("  WARNING: No MultiSocial CSV files found. Skipping.")
+        return []
+
+    records = []
+    for csv_path in csv_files:
+        print(f"  Reading: {csv_path}")
+        df = pd.read_csv(csv_path, low_memory=False)
+        print(f"  Columns: {list(df.columns)}")
+        print(f"  Rows: {len(df)}")
+
+        # Discover column names (handle variations)
+        text_col = next((c for c in df.columns if c.lower() in
+                         ("text", "content", "post", "message")), None)
+        label_col = next((c for c in df.columns if c.lower() in
+                          ("label", "class", "is_ai", "generated")), None)
+        model_col = next((c for c in df.columns if c.lower() in
+                          ("model", "source_model", "generator", "source")), None)
+        platform_col = next((c for c in df.columns if c.lower() in
+                             ("platform", "social_media", "network", "source_platform")), None)
+
+        if text_col is None:
+            print(f"  WARNING: Could not find text column in {csv_path}. "
+                  f"Available: {list(df.columns)}")
+            continue
+
+        print(f"  Mapped columns: text={text_col}, label={label_col}, "
+              f"model={model_col}, platform={platform_col}")
+
+        for _, row in df.iterrows():
+            text = clean_text(str(row[text_col]))
+            if word_count(text) < 5:
+                continue
+
+            # Determine label
+            if label_col:
+                raw_label = str(row[label_col]).lower().strip()
+                if raw_label in ("ai", "generated", "machine", "1", "true", "yes"):
+                    label = "ai"
+                elif raw_label in ("human", "original", "real", "0", "false", "no"):
+                    label = "human"
+                else:
+                    label = "ai" if "ai" in raw_label or "gen" in raw_label else "human"
+            else:
+                label = "human"
+
+            source_model = str(row[model_col]).strip() if model_col and pd.notna(row[model_col]) else ("human" if label == "human" else "unknown_ai")
+            platform = str(row[platform_col]).strip().lower() if platform_col and pd.notna(row[platform_col]) else "unknown"
+
+            records.append({
+                "text": text,
+                "label": label,
+                "source_model": source_model,
+                "platform": platform,
+                "dataset": "multisocial",
+            })
+
+    print(f"  MultiSocial records after cleaning: {len(records)}")
+    return records
+
+
+def process_hc3():
+    """Process HC3 dataset (QA pairs with human and chatgpt answers)."""
+    print("\n--- Processing HC3 ---")
+    hc3_path = os.path.join(RAW_DIR, "hc3", "hc3_all.jsonl")
+
+    if not os.path.exists(hc3_path):
+        print("  WARNING: HC3 file not found. Skipping.")
+        return []
+
+    records = []
+    with open(hc3_path, "r", encoding="utf-8") as f:
+        for line in f:
+            row = json.loads(line)
+            question = str(row.get("question", "")).strip()
+
+            # Process human answers
+            for answer in row.get("human_answers", []):
+                text = clean_text(f"{question} {answer}")
+                if word_count(text) < 5:
+                    continue
+                records.append({
+                    "text": text,
+                    "label": "human",
+                    "source_model": "human",
+                    "platform": "qa_forum",
+                    "dataset": "hc3",
+                })
+
+            # Process ChatGPT answers
+            for answer in row.get("chatgpt_answers", []):
+                text = clean_text(f"{question} {answer}")
+                if word_count(text) < 5:
+                    continue
+                records.append({
+                    "text": text,
+                    "label": "ai",
+                    "source_model": "chatgpt",
+                    "platform": "qa_forum",
+                    "dataset": "hc3",
+                })
+
+    print(f"  HC3 records after cleaning: {len(records)}")
+    return records
+
+
+def process_raid():
+    """Process RAID test CSV."""
+    print("\n--- Processing RAID ---")
+    raid_path = os.path.join(RAW_DIR, "raid_test.csv")
+
+    if not os.path.exists(raid_path):
+        print("  WARNING: RAID file not found. Skipping.")
+        return []
+
+    df = pd.read_csv(raid_path, low_memory=False)
+    print(f"  Columns: {list(df.columns)}")
+    print(f"  Rows: {len(df)}")
+
+    # Discover columns
+    text_col = next((c for c in df.columns if c.lower() in
+                     ("text", "generation", "content", "output")), None)
+    model_col = next((c for c in df.columns if c.lower() in
+                      ("model", "source_model", "generator")), None)
+    label_col = next((c for c in df.columns if c.lower() in
+                      ("label", "class", "is_ai")), None)
+
+    if text_col is None:
+        print(f"  WARNING: Could not find text column. Available: {list(df.columns)}")
+        return []
+
+    print(f"  Mapped columns: text={text_col}, model={model_col}, label={label_col}")
+
+    records = []
+    for _, row in df.iterrows():
+        text = clean_text(str(row[text_col]))
+        if word_count(text) < 5:
+            continue
+
+        # Determine label
+        if label_col and pd.notna(row[label_col]):
+            raw_label = str(row[label_col]).lower().strip()
+            if raw_label in ("human", "0", "false", "no"):
+                label = "human"
+            else:
+                label = "ai"
+        else:
+            # RAID test set: if model column exists, non-null model = AI
+            if model_col and pd.notna(row[model_col]) and str(row[model_col]).strip():
+                label = "ai"
+            else:
+                label = "human"
+
+        source_model = str(row[model_col]).strip() if model_col and pd.notna(row[model_col]) else ("human" if label == "human" else "unknown_ai")
+        records.append({
+            "text": text,
+            "label": label,
+            "source_model": source_model,
+            "platform": "raid",
+            "dataset": "raid",
+        })
+
+    print(f"  RAID records after cleaning: {len(records)}")
+    return records
+
+
+def main():
+    os.makedirs(PROCESSED_DIR, exist_ok=True)
+
+    print("Starting preprocessing...")
+
+    # Collect records from all datasets
+    all_records = []
+    all_records.extend(process_multisocial())
+    all_records.extend(process_hc3())
+    all_records.extend(process_raid())
+
+    if not all_records:
+        print("\nERROR: No records collected. Check that data/raw/ has downloaded files.")
+        return
+
+    # Assign sequential IDs and write corpus.jsonl
+    print(f"\n--- Writing {OUTPUT_PATH} ---")
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+        for i, record in enumerate(all_records):
+            record["id"] = i
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    total = len(all_records)
+    print(f"\nTotal records: {total}")
+
+    # Statistics
+    label_counts = Counter(r["label"] for r in all_records)
+    dataset_counts = Counter(r["dataset"] for r in all_records)
+    platform_counts = Counter(r["platform"] for r in all_records)
+
+    print(f"\nBy label:")
+    for label, count in sorted(label_counts.items()):
+        print(f"  {label}: {count} ({100*count/total:.1f}%)")
+
+    print(f"\nBy dataset:")
+    for ds, count in sorted(dataset_counts.items()):
+        print(f"  {ds}: {count} ({100*count/total:.1f}%)")
+
+    print(f"\nBy platform:")
+    for plat, count in sorted(platform_counts.items()):
+        print(f"  {plat}: {count} ({100*count/total:.1f}%)")
+
+    size_mb = os.path.getsize(OUTPUT_PATH) / (1024 * 1024)
+    print(f"\nOutput: {OUTPUT_PATH} ({size_mb:.1f} MB)")
+
+
+if __name__ == "__main__":
+    main()
