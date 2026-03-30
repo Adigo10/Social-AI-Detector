@@ -4,7 +4,10 @@ import os
 import json
 import requests
 from tqdm import tqdm
+from dotenv import load_dotenv
 from datasets import load_dataset
+
+load_dotenv()
 
 RAW_DIR = os.path.join("data", "raw")
 
@@ -25,33 +28,76 @@ def download_file(url, dest_path, description="Downloading"):
 
 
 def download_multisocial():
-    """Download MultiSocial dataset CSVs from Zenodo."""
+    """Download MultiSocial dataset CSVs from Zenodo.
+
+    This dataset has restricted access. You must either:
+    1. Request access at https://zenodo.org/records/13846152 and set ZENODO_TOKEN in .env
+    2. Or manually download the CSV files and place them in data/raw/multisocial/
+    """
     print("\n=== Downloading MultiSocial dataset from Zenodo ===")
-    api_url = "https://zenodo.org/api/records/13846152"
-    resp = requests.get(api_url, timeout=30)
-    resp.raise_for_status()
-    record = resp.json()
-
-    files = record.get("files", [])
-    if not files:
-        raise RuntimeError("No files found in Zenodo record 13846152")
-
-    print(f"  Found {len(files)} file(s) in Zenodo record:")
-    for f in files:
-        print(f"    - {f['key']} ({f['size'] / (1024*1024):.1f} MB)")
 
     dest_dir = os.path.join(RAW_DIR, "multisocial")
     os.makedirs(dest_dir, exist_ok=True)
 
-    for f in files:
-        name = f["key"]
-        if name.endswith(".csv") or name.endswith(".csv.gz"):
-            url = f["links"]["self"]
-            dest = os.path.join(dest_dir, name)
+    # Check if files were already placed manually
+    existing = [f for f in os.listdir(dest_dir)
+                if f.endswith(".csv") or f.endswith(".csv.gz")] if os.path.isdir(dest_dir) else []
+    if existing:
+        print(f"  Found {len(existing)} existing CSV file(s) — skipping download:")
+        for f in existing:
+            size_mb = os.path.getsize(os.path.join(dest_dir, f)) / (1024 * 1024)
+            print(f"    - {f} ({size_mb:.1f} MB)")
+        return
+
+    # Try API with token (restricted dataset requires authentication)
+    token = os.environ.get("ZENODO_TOKEN")
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+
+    api_url = "https://zenodo.org/api/records/13846152/files"
+    resp = requests.get(api_url, headers=headers, timeout=30)
+
+    if resp.status_code == 403 or resp.status_code == 401:
+        print("  ⚠ MultiSocial is a RESTRICTED dataset on Zenodo.")
+        print("  To download it, choose one of these options:")
+        print()
+        print("  Option A: Manual download")
+        print("    1. Go to https://zenodo.org/records/13846152")
+        print("    2. Request access and wait for approval")
+        print("    3. Download the CSV file(s)")
+        print("    4. Place them in data/raw/multisocial/")
+        print("    5. Rerun this script")
+        print()
+        print("  Option B: API token (after access is granted)")
+        print("    1. Create a token at https://zenodo.org/account/settings/applications/")
+        print("    2. Add ZENODO_TOKEN=your_token to .env")
+        print("    3. Rerun this script")
+        print()
+        print("  Skipping MultiSocial for now. Continuing with other datasets...")
+        return
+
+    resp.raise_for_status()
+    data = resp.json()
+    entries = data.get("entries", [])
+
+    if not entries:
+        print("  WARNING: No files found in Zenodo record. Skipping.")
+        return
+
+    print(f"  Found {len(entries)} file(s):")
+    for entry in entries:
+        key = entry["key"]
+        size_mb = entry.get("size", 0) / (1024 * 1024)
+        print(f"    - {key} ({size_mb:.1f} MB)")
+
+    for entry in entries:
+        key = entry["key"]
+        if key.endswith(".csv") or key.endswith(".csv.gz"):
+            url = entry["links"]["self"]
+            dest = os.path.join(dest_dir, key)
             if os.path.exists(dest):
-                print(f"  Skipping {name} (already exists)")
+                print(f"  Skipping {key} (already exists)")
                 continue
-            download_file(url, dest, description=name)
+            download_file(url, dest, description=key)
 
 
 def download_hc3():
