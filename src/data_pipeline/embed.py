@@ -152,7 +152,7 @@ def main():
     size_mb = os.path.getsize(OUTPUT_PATH) / (1024 * 1024)
     print(f"\nEmbedding complete!")
     print(f"  Shape: {embeddings.shape}")
-    print(f"  Dtype: {arr.dtype}")
+    print(f"  Dtype: {embeddings.dtype}")
     print(f"  File: {OUTPUT_PATH} ({size_mb:.1f} MB)")
     print(f"  Total time: {elapsed/60:.1f} min")
 
