@@ -67,12 +67,12 @@ pip install \
     pyyaml psutil scipy nest-asyncio
 
 # W&B login
-export WANDB_API_KEY="REMOVED"
+export WANDB_API_KEY="*"
 wandb login
 
 # HuggingFace login (needed for gated models like Llama 3.1)
 # First accept Meta's license at: https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct
-export HF_TOKEN="REMOVED"
+export HF_TOKEN="*"
 python -m huggingface_hub.commands.huggingface_cli login --token $HF_TOKEN
 
 # Verify imports

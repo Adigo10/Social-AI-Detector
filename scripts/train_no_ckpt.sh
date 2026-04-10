@@ -43,10 +43,10 @@ export WANDB_CONSOLE=wrap
 export WANDB_WATCH=false
 
 # W&B auth
-export WANDB_API_KEY="REMOVED"
+export WANDB_API_KEY="*"
 
 # HuggingFace auth (for gated Llama 3.1 model)
-export HF_TOKEN="REMOVED"
+export HF_TOKEN="*"
 
 # Run training WITHOUT checkpointing
 cd $HOME/llm-project/Social-AI-Detector
