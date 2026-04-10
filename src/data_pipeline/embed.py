@@ -1,5 +1,11 @@
-"""Step 3: Generate embeddings via Gemini API with checkpoint/resume."""
+"""Step 3: Generate embeddings via Gemini API with checkpoint/resume.
 
+Usage:
+    python embed.py                          # defaults: corpus.jsonl -> core/embeddings.npy
+    python embed.py --input PATH --output PATH [--checkpoint PATH]
+"""
+
+import argparse
 import json
 import os
 import sys
@@ -13,9 +19,10 @@ from google.genai import types
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 PROCESSED_DIR = os.path.join(PROJECT_ROOT, "data", "processed")
-CORPUS_PATH = os.path.join(PROCESSED_DIR, "corpus.jsonl")
-OUTPUT_PATH = os.path.join(PROCESSED_DIR, "embeddings.npy")
-CHECKPOINT_PATH = os.path.join(PROCESSED_DIR, "embeddings_checkpoint.npz")
+
+DEFAULT_INPUT = os.path.join(PROCESSED_DIR, "core", "corpus.jsonl")
+DEFAULT_OUTPUT = os.path.join(PROCESSED_DIR, "core", "embeddings.npy")
+DEFAULT_CHECKPOINT = os.path.join(PROCESSED_DIR, "core", "embeddings_checkpoint.npz")
 
 MODEL = "gemini-embedding-2-preview"
 DIMENSIONS = 768
@@ -26,20 +33,20 @@ RETRY_WAIT = 60
 MAX_RETRIES = 3
 
 
-def load_texts():
-    """Load all texts from corpus.jsonl in order."""
+def load_texts(input_path):
+    """Load all texts from a .jsonl file in order."""
     texts = []
-    with open(CORPUS_PATH, "r", encoding="utf-8") as f:
+    with open(input_path, "r", encoding="utf-8") as f:
         for line in f:
             record = json.loads(line)
             texts.append(record["text"])
     return texts
 
 
-def load_checkpoint():
+def load_checkpoint(checkpoint_path):
     """Load checkpoint if it exists. Returns (embeddings_so_far, next_index)."""
-    if os.path.exists(CHECKPOINT_PATH):
-        data = np.load(CHECKPOINT_PATH)
+    if os.path.exists(checkpoint_path):
+        data = np.load(checkpoint_path)
         embeddings = data["embeddings"]
         next_index = int(data["next_index"])
         print(f"Resuming from checkpoint: {next_index} texts already embedded")
@@ -47,12 +54,12 @@ def load_checkpoint():
     return None, 0
 
 
-def save_checkpoint(embeddings, next_index):
+def save_checkpoint(checkpoint_path, embeddings, next_index):
     """Save checkpoint with current progress."""
     assert embeddings.shape[0] == next_index, (
         f"Checkpoint alignment error: {embeddings.shape[0]} embeddings but next_index={next_index}"
     )
-    np.savez(CHECKPOINT_PATH, embeddings=embeddings, next_index=next_index)
+    np.savez(checkpoint_path, embeddings=embeddings, next_index=next_index)
     print(f"  Checkpoint saved at index {next_index}")
 
 
@@ -77,7 +84,20 @@ def embed_batch(client, texts):
     return None  # All retries failed
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Generate embeddings via Gemini API.")
+    parser.add_argument("--input", default=DEFAULT_INPUT, help="Input .jsonl file (default: corpus.jsonl)")
+    parser.add_argument("--output", default=DEFAULT_OUTPUT, help="Output .npy file")
+    parser.add_argument("--checkpoint", default=None, help="Checkpoint .npz file (default: <output>.checkpoint.npz)")
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+    input_path = args.input
+    output_path = args.output
+    checkpoint_path = args.checkpoint or output_path.replace(".npy", "_checkpoint.npz")
+
     load_dotenv()
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -86,13 +106,13 @@ def main():
 
     client = genai.Client(api_key=api_key)
 
-    print("Loading corpus texts...")
-    texts = load_texts()
+    print(f"Loading texts from {input_path}...")
+    texts = load_texts(input_path)
     total = len(texts)
     print(f"Total texts: {total}")
 
     # Load or initialize embeddings (pre-allocated numpy array to avoid OOM)
-    existing_embeddings, start_index = load_checkpoint()
+    existing_embeddings, start_index = load_checkpoint(checkpoint_path)
     embeddings = np.zeros((total, DIMENSIONS), dtype=np.float32)
     if existing_embeddings is not None:
         assert existing_embeddings.shape == (start_index, DIMENSIONS), (
@@ -114,7 +134,7 @@ def main():
             # All retries failed — save checkpoint and exit
             print(f"\nFATAL: API failed after {MAX_RETRIES} retries at index {i}")
             if processed > 0:
-                save_checkpoint(embeddings[:processed], processed)
+                save_checkpoint(checkpoint_path, embeddings[:processed], processed)
             print("Checkpoint saved. Rerun this script to resume.")
             sys.exit(1)
 
@@ -133,7 +153,7 @@ def main():
 
         # Checkpoint every CHECKPOINT_INTERVAL texts
         if processed % CHECKPOINT_INTERVAL == 0 and processed > start_index:
-            save_checkpoint(embeddings[:processed], processed)
+            save_checkpoint(checkpoint_path, embeddings[:processed], processed)
 
         time.sleep(SLEEP_BETWEEN_CALLS)
 
@@ -141,19 +161,19 @@ def main():
     assert embeddings.shape[0] == total, (
         f"Embedding count mismatch: expected {total}, got {embeddings.shape[0]}"
     )
-    np.save(OUTPUT_PATH, embeddings)
+    np.save(output_path, embeddings)
 
     # Remove checkpoint
-    if os.path.exists(CHECKPOINT_PATH):
-        os.remove(CHECKPOINT_PATH)
+    if os.path.exists(checkpoint_path):
+        os.remove(checkpoint_path)
         print("Checkpoint file removed.")
 
     elapsed = time.time() - start_time
-    size_mb = os.path.getsize(OUTPUT_PATH) / (1024 * 1024)
+    size_mb = os.path.getsize(output_path) / (1024 * 1024)
     print(f"\nEmbedding complete!")
     print(f"  Shape: {embeddings.shape}")
     print(f"  Dtype: {embeddings.dtype}")
-    print(f"  File: {OUTPUT_PATH} ({size_mb:.1f} MB)")
+    print(f"  File: {output_path} ({size_mb:.1f} MB)")
     print(f"  Total time: {elapsed/60:.1f} min")
 
 
