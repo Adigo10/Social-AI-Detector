@@ -44,6 +44,7 @@ INDEX_PATH = str(PROCESSED_DIR / "corpus.index")
 TRAIN_INDICES_PATH = str(PROCESSED_DIR / "train_indices.npy")
 CORPUS_PATH = str(PROCESSED_DIR / "corpus.jsonl")
 LLAMA_ADAPTER_PATH = str(MODELS_DIR / "llama_custom")
+LLAMA_MLX_PATH = str(MODELS_DIR / "llama_mlx")
 
 KNN_K = int(os.getenv("KNN_K", "10"))
 ENSEMBLE_ALPHA = float(os.getenv("ENSEMBLE_ALPHA", "0.5"))
@@ -66,7 +67,7 @@ async def lifespan(app: FastAPI):
         gemini_api_key=api_key,
         k=KNN_K,
     )
-    llm = LlamaDetector(adapter_path=LLAMA_ADAPTER_PATH)
+    llm = LlamaDetector(adapter_path=LLAMA_ADAPTER_PATH, mlx_path=LLAMA_MLX_PATH)
     ensemble = EnsembleDetector(knn=knn, llm=llm, alpha=ENSEMBLE_ALPHA)
 
     app.state.detectors = {
@@ -158,7 +159,7 @@ async def predict(body: PredictRequest, request: Request):
 
     # Run synchronous predict() in thread pool so we don't block the event loop
     t0 = time.perf_counter()
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     results = await loop.run_in_executor(None, detector.predict, [text])
     elapsed_ms = (time.perf_counter() - t0) * 1000
 

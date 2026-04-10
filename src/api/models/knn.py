@@ -91,22 +91,24 @@ class KNNDetector(BaseDetector):
         texts: List[str],
         neighbors: Optional[List[List[Dict[str, Any]]]] = None,
     ) -> List[Dict[str, Any]]:
+        from typing import Set
         total = len(texts)
 
         # --- Embed ---
         embeddings = np.zeros((total, EMBED_DIMENSIONS), dtype=np.float32)
+        failed_indices: Set[int] = set()
         for i in range(0, total, EMBED_BATCH_SIZE):
+            if i > 0:
+                time.sleep(EMBED_SLEEP)  # rate-limit: sleep BEFORE each batch after the first
             batch = texts[i: i + EMBED_BATCH_SIZE]
             result = self._embed_batch(batch)
             if result is None:
-                # Return safe fallback for the whole batch on fatal embed failure
-                return [
-                    {"prediction": "human", "confidence": 0.5, "neighbors": []}
-                    for _ in texts
-                ]
-            embeddings[i: i + len(batch)] = result
-            if i > 0:
-                time.sleep(EMBED_SLEEP)
+                # Track failed indices; keep going so other batches still succeed
+                print(f"  KNN: permanent embed failure for batch at index {i}; "
+                      f"fallback for {len(batch)} texts.")
+                failed_indices.update(range(i, i + len(batch)))
+            else:
+                embeddings[i: i + len(batch)] = result
 
         # L2-normalize for cosine similarity via inner product
         faiss.normalize_L2(embeddings)
@@ -114,6 +116,10 @@ class KNNDetector(BaseDetector):
         # --- KNN search and majority vote ---
         results = []
         for i in range(total):
+            if i in failed_indices:
+                results.append({"prediction": "human", "confidence": 0.5, "neighbors": []})
+                continue
+
             # Use [i:i+1] slice — guaranteed C-contiguous for FAISS
             query = embeddings[i: i + 1]
             scores, idx_result = self._index.search(query, self._k)
@@ -140,9 +146,13 @@ class KNNDetector(BaseDetector):
                     "similarity": round(similarity, 4),
                 })
 
-            confidence = ai_votes / total_votes if total_votes > 0 else 0.5
-            # Tie-break → "ai" (matches knn_baseline.py convention)
-            prediction = "ai" if ai_votes >= (total_votes - ai_votes) else "human"
+            if total_votes == 0:
+                # No valid FAISS results — safe default
+                confidence, prediction = 0.5, "human"
+            else:
+                confidence = ai_votes / total_votes
+                # Tie-break → "ai" (matches knn_baseline.py convention)
+                prediction = "ai" if ai_votes >= (total_votes - ai_votes) else "human"
 
             results.append({
                 "prediction": prediction,

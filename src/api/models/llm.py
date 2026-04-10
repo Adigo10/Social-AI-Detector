@@ -1,19 +1,20 @@
 """LlamaDetector: Llama 3.1 8B + LoRA adapter for AI-text classification.
 
-Loads the fine-tuned model from models/llama_custom/ (LoRA adapter on top of
-unsloth/meta-llama-3.1-8b-instruct-unsloth-bnb-4bit).
+Device fallback chain (tried in order):
+  1. CUDA  — 4-bit BNB quantized (fastest, requires NVIDIA GPU + bitsandbytes)
+  2. MLX   — Apple Silicon native via mlx_lm (requires mlx_lm + models/llama_mlx/)
+  3. CPU   — standard fp32 transformers (slow, ~minutes/text, works everywhere)
 
-Requires: GPU + torch + transformers + peft + bitsandbytes.
-If any requirement is missing or no GPU is found, is_available() returns False
-and the server starts cleanly in KNN-only mode.
+If all three paths fail, is_available() returns False and the server starts in
+KNN-only mode via EnsembleDetector's graceful degradation.
 
 Prompt format matches the training data built by
 src/data_pipeline/build_training_data.py — reuses build_rag_instruction() and
 build_plain_instruction() directly to avoid drift.
 """
 
+import math
 import sys
-import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -33,11 +34,13 @@ K_RAG_NEIGHBORS = 5   # how many neighbors to pass as RAG context
 
 
 class LlamaDetector(BaseDetector):
-    """Fine-tuned Llama 3.1 8B (4-bit LoRA) classifier."""
+    """Fine-tuned Llama 3.1 8B (LoRA) classifier with CUDA → MLX → CPU fallback."""
 
-    def __init__(self, adapter_path: str):
+    def __init__(self, adapter_path: str, mlx_path: str = ""):
         self._adapter_path = adapter_path
+        self._mlx_path = mlx_path
         self._available = False
+        self._device = "none"
         self._model = None
         self._tokenizer = None
         self._ai_token_id: int = -1
@@ -45,28 +48,20 @@ class LlamaDetector(BaseDetector):
 
         try:
             import torch
-            from peft import PeftModel
-            from transformers import (
-                AutoModelForCausalLM,
-                AutoTokenizer,
-                BitsAndBytesConfig,
-            )
+            from transformers import AutoModelForCausalLM, AutoTokenizer
 
+            # ------------------------------------------------------------------
+            # Path 1: CUDA — 4-bit BNB quantized (unsloth variant)
+            # ------------------------------------------------------------------
             if torch.cuda.is_available():
-                device = "cuda"
-            elif torch.backends.mps.is_available():
-                device = "mps"
-            else:
-                print("LlamaDetector: no CUDA or MPS device detected — skipping model load.")
-                return
+                from peft import PeftModel
+                from transformers import BitsAndBytesConfig
 
-            print(f"LlamaDetector: using device={device}")
-            print(f"LlamaDetector: loading tokenizer from {adapter_path} ...")
-            tokenizer = AutoTokenizer.from_pretrained(adapter_path)
-            if tokenizer.pad_token_id is None:
-                tokenizer.pad_token_id = tokenizer.eos_token_id
+                print("LlamaDetector: using device=cuda")
+                tokenizer = AutoTokenizer.from_pretrained(adapter_path)
+                if tokenizer.pad_token_id is None:
+                    tokenizer.pad_token_id = tokenizer.eos_token_id
 
-            if device == "cuda":
                 base_model_id = "unsloth/meta-llama-3.1-8b-instruct-unsloth-bnb-4bit"
                 bnb_config = BitsAndBytesConfig(
                     load_in_4bit=True,
@@ -74,31 +69,82 @@ class LlamaDetector(BaseDetector):
                     bnb_4bit_use_double_quant=True,
                     bnb_4bit_quant_type="nf4",
                 )
-                load_kwargs = {"quantization_config": bnb_config, "device_map": "auto"}
-            else:
-                # MPS: bitsandbytes not supported; use standard fp16 base model
-                base_model_id = "meta-llama/Meta-Llama-3.1-8B-Instruct"
-                load_kwargs = {"torch_dtype": torch.float16, "device_map": {"": device}}
+                print(f"LlamaDetector: loading base model {base_model_id} ...")
+                base_model = AutoModelForCausalLM.from_pretrained(
+                    base_model_id,
+                    quantization_config=bnb_config,
+                    device_map="auto",
+                )
+                print("LlamaDetector: loading LoRA adapter ...")
+                model = PeftModel.from_pretrained(base_model, adapter_path)
+                model.eval()
 
-            print(f"LlamaDetector: loading base model {base_model_id} ...")
+                self._ai_token_id = tokenizer.encode("ai", add_special_tokens=False)[0]
+                self._human_token_id = tokenizer.encode("human", add_special_tokens=False)[0]
+                self._model = model
+                self._tokenizer = tokenizer
+                self._device = "cuda"
+                self._available = True
+                print("LlamaDetector: ready (cuda).")
+                return
+
+            # ------------------------------------------------------------------
+            # Path 2: MLX — Apple Silicon native (mlx_lm + converted model)
+            # ------------------------------------------------------------------
+            try:
+                import mlx_lm
+                import mlx.core as mx  # noqa: F401 — validates mlx is installed
+
+                mlx_model_path = Path(self._mlx_path)
+                if not mlx_model_path.exists():
+                    raise FileNotFoundError(
+                        f"MLX model directory not found at {self._mlx_path}. "
+                        "Run scripts/quantize_mlx.py to create it."
+                    )
+
+                print(f"LlamaDetector: loading MLX model from {self._mlx_path} ...")
+                mlx_model, mlx_tokenizer = mlx_lm.load(self._mlx_path)
+
+                self._ai_token_id = mlx_tokenizer.encode("ai", add_special_tokens=False)[0]
+                self._human_token_id = mlx_tokenizer.encode("human", add_special_tokens=False)[0]
+                self._model = mlx_model
+                self._tokenizer = mlx_tokenizer
+                self._device = "mlx"
+                self._available = True
+                print("LlamaDetector: ready (mlx).")
+                return
+
+            except (ImportError, FileNotFoundError) as mlx_err:
+                print(f"LlamaDetector: MLX unavailable ({mlx_err}), falling back to CPU.")
+
+            # ------------------------------------------------------------------
+            # Path 3: CPU — fp32 transformers (slow but works everywhere)
+            # ------------------------------------------------------------------
+            from peft import PeftModel
+
+            print("LlamaDetector: WARNING — CPU inference will be very slow (~minutes/text).")
+            tokenizer = AutoTokenizer.from_pretrained(adapter_path)
+            if tokenizer.pad_token_id is None:
+                tokenizer.pad_token_id = tokenizer.eos_token_id
+
+            base_model_id = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+            print(f"LlamaDetector: loading base model {base_model_id} on CPU ...")
             base_model = AutoModelForCausalLM.from_pretrained(
                 base_model_id,
-                **load_kwargs,
+                torch_dtype=torch.float32,
+                device_map="cpu",
             )
-
             print("LlamaDetector: loading LoRA adapter ...")
             model = PeftModel.from_pretrained(base_model, adapter_path)
             model.eval()
 
-            # Cache token IDs for "ai" and "human" (used for confidence extraction)
-            # encode() without special tokens; take the first sub-token if multi-token
             self._ai_token_id = tokenizer.encode("ai", add_special_tokens=False)[0]
             self._human_token_id = tokenizer.encode("human", add_special_tokens=False)[0]
-
             self._model = model
             self._tokenizer = tokenizer
+            self._device = "cpu"
             self._available = True
-            print("LlamaDetector: ready.")
+            print("LlamaDetector: ready (cpu — slow).")
 
         except Exception as e:
             print(f"LlamaDetector: failed to load — {e}")
@@ -109,7 +155,7 @@ class LlamaDetector(BaseDetector):
 
     @property
     def description(self) -> str:
-        return "Llama 3.1 8B (4-bit LoRA) fine-tuned on RAG instruction format"
+        return f"Llama 3.1 8B (LoRA) fine-tuned on RAG instruction format — device={self._device}"
 
     def is_available(self) -> bool:
         return self._available
@@ -119,67 +165,96 @@ class LlamaDetector(BaseDetector):
         texts: List[str],
         neighbors: Optional[List[List[Dict[str, Any]]]] = None,
     ) -> List[Dict[str, Any]]:
-        import torch
-        import torch.nn.functional as F
-
         results = []
         for idx, text in enumerate(texts):
             try:
-                # --- Build prompt ---
                 nbrs = (neighbors[idx] if neighbors is not None and idx < len(neighbors)
                         else None)
                 if nbrs:
-                    # Convert neighbor dicts to (text, label) tuples expected by builder
                     rag_pairs = [(n["text_snippet"], n["label"]) for n in nbrs[:K_RAG_NEIGHBORS]]
                     instruction = build_rag_instruction(text, rag_pairs)
                 else:
                     instruction = build_plain_instruction(text)
 
-                messages = [{"role": "user", "content": instruction}]
-                input_ids = self._tokenizer.apply_chat_template(
-                    messages,
-                    add_generation_prompt=True,
-                    return_tensors="pt",
-                ).to(self._model.device)
-
-                # --- Generate (max 3 tokens — "ai" or "human" are short) ---
-                with torch.no_grad():
-                    out = self._model.generate(
-                        input_ids,
-                        max_new_tokens=3,
-                        return_dict_in_generate=True,
-                        output_scores=True,
-                        pad_token_id=self._tokenizer.pad_token_id,
-                        do_sample=False,
-                    )
-
-                # --- Confidence from first token logits ---
-                first_logits = out.scores[0][0]   # shape: (vocab_size,)
-                ai_score = first_logits[self._ai_token_id].item()
-                human_score = first_logits[self._human_token_id].item()
-                probs = F.softmax(
-                    torch.tensor([ai_score, human_score], dtype=torch.float32), dim=0
-                )
-                confidence = float(probs[0])   # P(ai)
-
-                # --- Parse generated text as prediction ---
-                generated = self._tokenizer.decode(
-                    out.sequences[0][input_ids.shape[1]:],
-                    skip_special_tokens=True,
-                ).strip().lower()
-
-                # Trust logits for close calls; use text parse for clear outputs
-                if confidence >= 0.5:
-                    prediction = "ai"
-                elif generated.startswith("human"):
-                    prediction = "human"
+                if self._device == "mlx":
+                    result = self._predict_mlx(instruction)
                 else:
-                    prediction = "human"  # safe default
+                    result = self._predict_torch(instruction)
 
-                results.append({"prediction": prediction, "confidence": confidence, "neighbors": []})
+                results.append(result)
 
             except Exception as e:
                 print(f"LlamaDetector.predict error on text {idx}: {e}")
                 results.append({"prediction": "human", "confidence": 0.5, "neighbors": []})
 
         return results
+
+    def _predict_torch(self, instruction: str) -> Dict[str, Any]:
+        """Inference via HuggingFace generate — handles both cuda and cpu paths."""
+        import torch
+        import torch.nn.functional as F
+
+        messages = [{"role": "user", "content": instruction}]
+        input_ids = self._tokenizer.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            return_tensors="pt",
+        ).to(self._model.device)
+
+        with torch.no_grad():
+            out = self._model.generate(
+                input_ids,
+                max_new_tokens=3,
+                return_dict_in_generate=True,
+                output_scores=True,
+                pad_token_id=self._tokenizer.pad_token_id,
+                do_sample=False,
+            )
+
+        first_logits = out.scores[0][0]   # shape: (vocab_size,)
+        probs = F.softmax(
+            torch.tensor(
+                [first_logits[self._ai_token_id].item(),
+                 first_logits[self._human_token_id].item()],
+                dtype=torch.float32,
+            ),
+            dim=0,
+        )
+        confidence = float(probs[0])   # P(ai)
+        return {
+            "prediction": "ai" if confidence >= 0.5 else "human",
+            "confidence": confidence,
+            "neighbors": [],
+        }
+
+    def _predict_mlx(self, instruction: str) -> Dict[str, Any]:
+        """Inference via mlx_lm forward pass — Apple Silicon native path."""
+        import mlx.core as mx
+
+        messages = [{"role": "user", "content": instruction}]
+        tokens = self._tokenizer.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            tokenize=True,
+            return_tensors=None,   # plain Python list of ints
+        )
+
+        input_array = mx.array([tokens])          # shape: (1, seq_len)
+        logits = self._model(input_array)          # shape: (1, seq_len, vocab_size)
+        mx.eval(logits)                            # force lazy evaluation before indexing
+
+        last_logits = logits[0, -1, :]             # next-token distribution
+        ai_logit = float(last_logits[self._ai_token_id])
+        human_logit = float(last_logits[self._human_token_id])
+
+        # Numerically stable two-token softmax
+        max_l = max(ai_logit, human_logit)
+        exp_ai = math.exp(ai_logit - max_l)
+        exp_human = math.exp(human_logit - max_l)
+        confidence = exp_ai / (exp_ai + exp_human)   # P(ai)
+
+        return {
+            "prediction": "ai" if confidence >= 0.5 else "human",
+            "confidence": confidence,
+            "neighbors": [],
+        }

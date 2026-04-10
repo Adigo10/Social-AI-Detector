@@ -4,27 +4,44 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Social AI Detector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --surface2: #22263a;
-      --border: #2e3350;
-      --text: #e2e8f0;
-      --muted: #8892a4;
-      --accent: #6366f1;
-      --accent-hover: #818cf8;
-      --ai: #ef4444;
-      --ai-bg: #2d1515;
-      --ai-border: #7f1d1d;
-      --human: #22c55e;
-      --human-bg: #0f2318;
-      --human-border: #14532d;
-      --radius: 10px;
-      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --bg:          #06080f;
+      --bg2:         #0c0f1c;
+      --surface:     rgba(255,255,255,0.04);
+      --surface-hov: rgba(255,255,255,0.07);
+      --border:      rgba(255,255,255,0.08);
+      --border-hov:  rgba(255,255,255,0.16);
+      --text:        #e8eaf0;
+      --text-dim:    #9099b0;
+      --text-faint:  #4a5168;
+
+      --accent:      #6366f1;
+      --accent2:     #8b5cf6;
+      --accent-glow: rgba(99,102,241,0.35);
+
+      --ai:          #f87171;
+      --ai-dim:      rgba(239,68,68,0.15);
+      --ai-border:   rgba(239,68,68,0.3);
+      --ai-glow:     rgba(239,68,68,0.25);
+
+      --human:       #34d399;
+      --human-dim:   rgba(52,211,153,0.12);
+      --human-border:rgba(52,211,153,0.3);
+      --human-glow:  rgba(52,211,153,0.2);
+
+      --radius-sm:   8px;
+      --radius:      14px;
+      --radius-lg:   20px;
+      --font:        'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
 
     body {
       background: var(--bg);
@@ -33,226 +50,494 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
+    /* ── Mesh background ────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(99,102,241,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(139,92,246,0.09) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 60% at 50% 50%, rgba(6,8,15,0) 0%, var(--bg) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body > * { position: relative; z-index: 1; }
+
+    /* ── Header ─────────────────────────────────────────────── */
     header {
-      padding: 18px 32px;
+      padding: 16px 32px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
+      backdrop-filter: blur(12px);
+      background: rgba(6,8,15,0.6);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
 
-    header h1 {
-      font-size: 1.25rem;
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      box-shadow: 0 0 18px var(--accent-glow);
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-size: 1rem;
       font-weight: 700;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.025em;
+      background: linear-gradient(135deg, #e8eaf0 30%, #9ca3f4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    header .subtitle {
-      font-size: 0.8rem;
-      color: var(--muted);
+    .header-pill {
       margin-left: auto;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 12px;
+      letter-spacing: 0.01em;
     }
 
-    .dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 8px var(--accent);
-    }
-
+    /* ── Layout ─────────────────────────────────────────────── */
     main {
       flex: 1;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0;
-      max-width: 1200px;
+      gap: 20px;
+      max-width: 1180px;
       margin: 0 auto;
       width: 100%;
-      padding: 32px 24px;
-      gap: 24px;
+      padding: 32px 24px 48px;
     }
 
+    /* ── Panel ──────────────────────────────────────────────── */
     .panel {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
+      border-radius: var(--radius-lg);
+      padding: 28px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 20px;
+      backdrop-filter: blur(20px);
+      transition: border-color 0.2s;
     }
+
+    .panel:hover { border-color: var(--border-hov); }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-icon {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+
+    .panel-icon-input  { background: rgba(99,102,241,0.2); }
+    .panel-icon-result { background: rgba(139,92,246,0.2); }
 
     .panel-title {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
     }
 
-    label {
-      font-size: 0.85rem;
-      color: var(--muted);
-      display: block;
-      margin-bottom: 6px;
+    /* ── Form controls ──────────────────────────────────────── */
+    .field { display: flex; flex-direction: column; gap: 7px; }
+
+    .field-label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-dim);
     }
 
     select {
       width: 100%;
-      background: var(--surface2);
+      background: var(--bg2);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--text);
-      padding: 8px 12px;
-      font-size: 0.9rem;
+      padding: 9px 36px 9px 13px;
+      font-size: 0.875rem;
       font-family: var(--font);
+      font-weight: 500;
       cursor: pointer;
       appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238892a4' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%239099b0' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
-      background-position: right 12px center;
+      background-position: right 13px center;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
 
-    select:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+    select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .textarea-wrap { position: relative; }
 
     textarea {
       width: 100%;
-      min-height: 220px;
-      background: var(--surface2);
+      min-height: 210px;
+      background: var(--bg2);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--text);
-      padding: 12px;
-      font-size: 0.9rem;
+      padding: 13px;
+      font-size: 0.875rem;
       font-family: var(--font);
       resize: vertical;
-      line-height: 1.6;
+      line-height: 1.65;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
 
-    textarea:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
-    textarea::placeholder { color: var(--muted); }
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    textarea::placeholder { color: var(--text-faint); }
+
+    .textarea-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+    }
 
     .hint {
-      font-size: 0.75rem;
-      color: var(--muted);
-      text-align: right;
+      font-size: 0.72rem;
+      color: var(--text-faint);
     }
 
-    button#submitBtn {
-      background: var(--accent);
+    #charCount {
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Submit button ──────────────────────────────────────── */
+    .btn-row {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    #submitBtn {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
       color: #fff;
       border: none;
-      border-radius: 6px;
-      padding: 10px 20px;
-      font-size: 0.9rem;
+      border-radius: var(--radius-sm);
+      padding: 10px 24px;
+      font-size: 0.875rem;
       font-weight: 600;
+      font-family: var(--font);
       cursor: pointer;
-      transition: background 0.15s;
-      align-self: flex-end;
+      letter-spacing: 0.01em;
+      transition: opacity 0.15s, transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 0 20px var(--accent-glow);
+      display: flex;
+      align-items: center;
+      gap: 7px;
     }
 
-    button#submitBtn:hover:not(:disabled) { background: var(--accent-hover); }
-    button#submitBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+    #submitBtn:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 28px var(--accent-glow);
+    }
 
-    /* Results panel */
-    #results { display: flex; flex-direction: column; gap: 20px; }
+    #submitBtn:active:not(:disabled) { transform: translateY(0); }
 
+    #submitBtn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ── Error ──────────────────────────────────────────────── */
+    #errorMsg {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid var(--ai-border);
+      color: #fca5a5;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    /* ── Placeholder ────────────────────────────────────────── */
     .result-placeholder {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      color: var(--muted);
-      font-size: 0.9rem;
-      min-height: 300px;
+      gap: 12px;
+      min-height: 280px;
     }
 
-    .placeholder-icon { font-size: 2.5rem; opacity: 0.3; }
+    .placeholder-orb {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: var(--surface-hov);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      opacity: 0.5;
+    }
 
-    /* Prediction badge */
-    .badge {
-      display: inline-block;
-      padding: 8px 20px;
-      border-radius: 6px;
-      font-size: 1rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
+    .placeholder-text {
+      font-size: 0.85rem;
+      color: var(--text-faint);
+      font-weight: 500;
+    }
+
+    /* ── Results ────────────────────────────────────────────── */
+    #results { display: flex; flex-direction: column; gap: 22px; }
+
+    /* Prediction card */
+    .prediction-card {
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border: 1px solid;
+      transition: box-shadow 0.3s;
+    }
+
+    .prediction-card.card-ai {
+      background: var(--ai-dim);
+      border-color: var(--ai-border);
+      box-shadow: 0 0 30px var(--ai-glow);
+    }
+
+    .prediction-card.card-human {
+      background: var(--human-dim);
+      border-color: var(--human-border);
+      box-shadow: 0 0 30px var(--human-glow);
+    }
+
+    .pred-icon {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .pred-icon-ai    { background: rgba(239,68,68,0.2); }
+    .pred-icon-human { background: rgba(52,211,153,0.15); }
+
+    .pred-body { flex: 1; }
+
+    .pred-label {
+      font-size: 0.72rem;
+      font-weight: 600;
       text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin-bottom: 3px;
     }
 
-    .badge-ai {
-      background: var(--ai-bg);
-      border: 1px solid var(--ai-border);
-      color: var(--ai);
+    .pred-verdict {
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
     }
 
-    .badge-human {
-      background: var(--human-bg);
-      border: 1px solid var(--human-border);
-      color: var(--human);
+    .pred-verdict-ai    { color: var(--ai); }
+    .pred-verdict-human { color: var(--human); }
+
+    .pred-pct {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
     }
 
-    /* Confidence */
-    .confidence-section {}
-    .confidence-label {
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-bottom: 8px;
+    .pred-pct-ai    { color: var(--ai); }
+    .pred-pct-human { color: var(--human); }
+
+    /* Confidence bar */
+    .conf-section {}
+
+    .conf-labels {
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .conf-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    .conf-detail {
+      font-size: 0.72rem;
+      color: var(--text-faint);
     }
 
     .bar-track {
-      height: 8px;
-      background: var(--surface2);
-      border-radius: 4px;
+      height: 6px;
+      background: var(--bg2);
+      border-radius: 999px;
       overflow: hidden;
+      border: 1px solid var(--border);
     }
 
     .bar-fill {
       height: 100%;
-      border-radius: 4px;
-      transition: width 0.4s ease;
+      border-radius: 999px;
+      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    .fill-ai   { background: linear-gradient(90deg, #ef4444, #f87171); }
-    .fill-human { background: linear-gradient(90deg, #16a34a, #22c55e); }
+    .fill-ai    { background: linear-gradient(90deg, #ef4444, #fca5a5); }
+    .fill-human { background: linear-gradient(90deg, #059669, #34d399); }
 
-    /* Neighbor cards */
-    .neighbors-header {
-      font-size: 0.8rem;
+    /* Dual bar (AI vs Human) */
+    .dual-bar {
+      display: flex;
+      height: 6px;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+    }
+
+    .dual-bar-ai {
+      background: linear-gradient(90deg, #ef4444, #f87171);
+      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      height: 100%;
+    }
+
+    .dual-bar-human {
+      background: linear-gradient(90deg, #34d399, #6ee7b7);
+      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      height: 100%;
+      margin-left: auto;
+    }
+
+    .dual-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+
+    .dual-lbl {
+      font-size: 0.7rem;
       font-weight: 600;
-      color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
     }
+
+    .dual-lbl-ai    { color: var(--ai); }
+    .dual-lbl-human { color: var(--human); }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Neighbors */
+    .nbr-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .nbr-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .nbr-stats {
+      display: flex;
+      gap: 6px;
+    }
+
+    .nbr-stat {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .nbr-stat-ai    { background: var(--ai-dim); color: var(--ai); border: 1px solid var(--ai-border); }
+    .nbr-stat-human { background: var(--human-dim); color: var(--human); border: 1px solid var(--human-border); }
 
     .neighbors-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      max-height: 360px;
+      gap: 7px;
+      max-height: 320px;
       overflow-y: auto;
       padding-right: 4px;
     }
 
-    .neighbors-list::-webkit-scrollbar { width: 4px; }
+    .neighbors-list::-webkit-scrollbar { width: 3px; }
     .neighbors-list::-webkit-scrollbar-track { background: transparent; }
     .neighbors-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
     .neighbor-card {
-      background: var(--surface2);
-      border-radius: 6px;
+      background: rgba(255,255,255,0.03);
+      border-radius: var(--radius-sm);
       padding: 10px 12px;
-      border-left: 3px solid transparent;
-      font-size: 0.82rem;
+      border: 1px solid var(--border);
+      border-left-width: 2px;
+      font-size: 0.8rem;
+      transition: background 0.15s, border-color 0.15s;
+      cursor: default;
     }
+
+    .neighbor-card:hover { background: var(--surface-hov); }
 
     .neighbor-card.card-ai    { border-left-color: var(--ai); }
     .neighbor-card.card-human { border-left-color: var(--human); }
@@ -261,147 +546,179 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
     }
 
-    .neighbor-rank { color: var(--muted); font-weight: 600; }
-
-    .neighbor-label-badge {
-      font-size: 0.68rem;
+    .nbr-rank {
+      font-size: 0.7rem;
       font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 3px;
+      color: var(--text-faint);
+      width: 20px;
+    }
+
+    .nbr-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
-    .lbl-ai    { background: var(--ai-bg); color: var(--ai); border: 1px solid var(--ai-border); }
-    .lbl-human { background: var(--human-bg); color: var(--human); border: 1px solid var(--human-border); }
+    .nbr-badge-ai    { background: var(--ai-dim); color: var(--ai); border: 1px solid var(--ai-border); }
+    .nbr-badge-human { background: var(--human-dim); color: var(--human); border: 1px solid var(--human-border); }
 
-    .neighbor-sim { margin-left: auto; color: var(--muted); font-size: 0.75rem; }
+    .nbr-sim {
+      margin-left: auto;
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
 
-    .neighbor-text {
-      color: var(--muted);
+    .nbr-text {
+      color: var(--text-dim);
       line-height: 1.5;
       word-break: break-word;
     }
 
-    /* Processing time */
-    .processing-time {
-      font-size: 0.75rem;
-      color: var(--muted);
-      text-align: right;
+    /* Footer row */
+    .result-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
-    /* Error */
-    #errorMsg {
-      background: #2d1515;
-      border: 1px solid var(--ai-border);
-      color: #fca5a5;
-      border-radius: 6px;
-      padding: 10px 14px;
-      font-size: 0.85rem;
+    .time-badge {
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      background: var(--surface-hov);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-variant-numeric: tabular-nums;
     }
 
-    /* Loading spinner */
+    .model-badge {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      background: rgba(99,102,241,0.1);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 999px;
+      padding: 3px 10px;
+    }
+
+    /* ── Spinner ────────────────────────────────────────────── */
     .spinner {
-      display: inline-block;
-      width: 14px; height: 14px;
-      border: 2px solid rgba(255,255,255,0.3);
+      width: 13px; height: 13px;
+      border: 2px solid rgba(255,255,255,0.25);
       border-top-color: #fff;
       border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 6px;
+      animation: spin 0.65s linear infinite;
+      flex-shrink: 0;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    @media (max-width: 768px) {
-      main { grid-template-columns: 1fr; }
+    /* ── Fade-in ─────────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-up { animation: fadeUp 0.3s ease both; }
+
+    /* ── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 780px) {
+      main { grid-template-columns: 1fr; padding: 20px 16px 40px; }
+      header { padding: 14px 20px; }
+      .header-pill { display: none; }
     }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="dot"></div>
-  <h1>Social AI Detector</h1>
-  <span class="subtitle">Classifies social media posts as AI-generated or human-written</span>
+  <div class="logo">
+    <div class="logo-icon">🔍</div>
+    <span class="logo-text">Social AI Detector</span>
+  </div>
+  <span class="header-pill">Classify posts as AI-generated or human-written</span>
 </header>
 
 <main>
   <!-- Input panel -->
   <div class="panel">
-    <div class="panel-title">Input</div>
+    <div class="panel-header">
+      <div class="panel-icon panel-icon-input">✦</div>
+      <span class="panel-title">Input</span>
+    </div>
 
-    <div>
-      <label for="modelSelect">Detector model</label>
+    <div class="field">
+      <span class="field-label">Detector model</span>
       <select id="modelSelect"></select>
     </div>
 
-    <div>
-      <label for="textInput">Post text</label>
-      <textarea
-        id="textInput"
-        placeholder="Paste a social media post here...&#10;&#10;Examples:&#10;  &quot;Just dropped my phone in the sink. Great start to Monday.&quot;&#10;  &quot;AI models demonstrate emergent capabilities that transcend traditional ML paradigms.&quot;"
-      ></textarea>
-      <div class="hint">Ctrl+Enter to submit</div>
+    <div class="field">
+      <span class="field-label">Post text</span>
+      <div class="textarea-wrap">
+        <textarea
+          id="textInput"
+          placeholder="Paste a social media post here…&#10;&#10;e.g. &quot;Just dropped my phone in the sink. Great start to Monday.&quot;"
+        ></textarea>
+      </div>
+      <div class="textarea-footer">
+        <span class="hint">Ctrl + Enter to analyze</span>
+        <span id="charCount">0 chars</span>
+      </div>
     </div>
 
-    <button id="submitBtn">Analyze</button>
+    <div class="btn-row">
+      <button id="submitBtn">Analyze</button>
+    </div>
+
     <div id="errorMsg" style="display:none"></div>
   </div>
 
   <!-- Results panel -->
   <div class="panel">
-    <div class="panel-title">Results</div>
+    <div class="panel-header">
+      <div class="panel-icon panel-icon-result">◈</div>
+      <span class="panel-title">Results</span>
+    </div>
 
     <div id="placeholder" class="result-placeholder">
-      <div class="placeholder-icon">&#128269;</div>
-      <div>Enter a post and click Analyze</div>
+      <div class="placeholder-orb">🔎</div>
+      <span class="placeholder-text">Enter a post and click Analyze</span>
     </div>
 
-    <div id="results" style="display:none">
-      <div id="predictionBadge"></div>
-
-      <div class="confidence-section">
-        <div class="confidence-label">
-          <span id="confidenceLabel">AI confidence</span>
-          <span id="confidencePct"></span>
-        </div>
-        <div class="bar-track">
-          <div id="barFill" class="bar-fill" style="width:0%"></div>
-        </div>
-      </div>
-
-      <div id="neighborSection" style="display:none">
-        <div class="neighbors-header" id="neighborsHeader"></div>
-        <div class="neighbors-list" id="neighborList"></div>
-      </div>
-
-      <div class="processing-time" id="processingTime"></div>
-    </div>
+    <div id="results" style="display:none"></div>
   </div>
 </main>
 
 <script>
-  const API = '';   // same origin
+  const API = '';
 
-  // ── Model loader ──────────────────────────────────────────────────────────
+  // ── Character counter ──────────────────────────────────────
+  const textInput = document.getElementById('textInput');
+  const charCount = document.getElementById('charCount');
+  textInput.addEventListener('input', () => {
+    const n = textInput.value.length;
+    charCount.textContent = `${n.toLocaleString()} char${n !== 1 ? 's' : ''}`;
+  });
+
+  // ── Model loader ───────────────────────────────────────────
   async function loadModels() {
     try {
       const resp = await fetch(`${API}/api/models`);
       const data = await resp.json();
       const sel = document.getElementById('modelSelect');
       sel.innerHTML = '';
-
       const available = data.models.filter(m => m.available);
       if (available.length === 0) {
         sel.innerHTML = '<option value="">No models available</option>';
         return;
       }
-
       available.forEach(m => {
         const opt = document.createElement('option');
         opt.value = m.name;
@@ -409,27 +726,22 @@
         if (m.name === 'ensemble') opt.selected = true;
         sel.appendChild(opt);
       });
-
-      // Fallback default: first available model
-      if (!available.find(m => m.name === 'ensemble')) {
-        sel.options[0].selected = true;
-      }
+      if (!available.find(m => m.name === 'ensemble')) sel.options[0].selected = true;
     } catch (e) {
       showError('Could not reach API: ' + e.message);
     }
   }
 
-  // ── Prediction ────────────────────────────────────────────────────────────
+  // ── Prediction ─────────────────────────────────────────────
   async function analyze() {
-    const text = document.getElementById('textInput').value.trim();
+    const text = textInput.value.trim();
     if (!text) { showError('Please enter some text.'); return; }
-
     const model = document.getElementById('modelSelect').value;
     if (!model) { showError('No model selected.'); return; }
 
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Analyzing…';
+    btn.innerHTML = '<div class="spinner"></div>Analyzing…';
     hideError();
     document.getElementById('results').style.display = 'none';
     document.getElementById('placeholder').style.display = 'flex';
@@ -440,16 +752,13 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, model }),
       });
-
       if (!resp.ok) {
         let detail = `HTTP ${resp.status}`;
         try { detail = (await resp.json()).detail; } catch (_) {}
         showError(detail);
         return;
       }
-
-      const data = await resp.json();
-      renderResults(data);
+      renderResults(await resp.json());
     } catch (e) {
       showError('Network error: ' + e.message);
     } finally {
@@ -458,61 +767,93 @@
     }
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────
   function renderResults(data) {
-    const isAI = data.prediction === 'ai';
-    const pct  = Math.round(data.confidence * 100);
+    const isAI  = data.prediction === 'ai';
+    const pct   = Math.round(data.confidence * 100);
+    const hPct  = 100 - pct;
 
-    // Badge
-    const badge = document.getElementById('predictionBadge');
-    badge.className = `badge ${isAI ? 'badge-ai' : 'badge-human'}`;
-    badge.textContent = isAI ? 'AI-Generated' : 'Human-Written';
+    const nbrs      = data.neighbors || [];
+    const aiCount   = nbrs.filter(n => n.label === 'ai').length;
+    const humCount  = nbrs.length - aiCount;
 
-    // Confidence bar
-    document.getElementById('confidencePct').textContent = `${pct}%`;
-    const fill = document.getElementById('barFill');
-    fill.className = `bar-fill ${isAI ? 'fill-ai' : 'fill-human'}`;
-    fill.style.width = `${pct}%`;
-
-    // Neighbors
-    const nbrs = data.neighbors || [];
-    const nbrSection = document.getElementById('neighborSection');
-    if (nbrs.length > 0) {
-      const aiCount    = nbrs.filter(n => n.label === 'ai').length;
-      const humanCount = nbrs.length - aiCount;
-      document.getElementById('neighborsHeader').textContent =
-        `Nearest Neighbors  ·  ${aiCount} AI  /  ${humanCount} human  (of ${nbrs.length})`;
-      document.getElementById('neighborList').innerHTML = nbrs.map((n, i) => `
-        <div class="neighbor-card ${n.label === 'ai' ? 'card-ai' : 'card-human'}">
-          <div class="neighbor-meta">
-            <span class="neighbor-rank">#${i + 1}</span>
-            <span class="neighbor-label-badge ${n.label === 'ai' ? 'lbl-ai' : 'lbl-human'}">${n.label}</span>
-            <span class="neighbor-sim">sim ${n.similarity.toFixed(3)}</span>
+    const nbrsHTML = nbrs.length > 0 ? `
+      <div>
+        <div class="nbr-header">
+          <span class="nbr-title">Nearest Neighbors</span>
+          <div class="nbr-stats">
+            <span class="nbr-stat nbr-stat-ai">${aiCount} AI</span>
+            <span class="nbr-stat nbr-stat-human">${humCount} Human</span>
           </div>
-          <p class="neighbor-text">${esc(n.text_snippet)}</p>
         </div>
-      `).join('');
-      nbrSection.style.display = 'block';
-    } else {
-      nbrSection.style.display = 'none';
-    }
+        <div class="neighbors-list">
+          ${nbrs.map((n, i) => `
+            <div class="neighbor-card ${n.label === 'ai' ? 'card-ai' : 'card-human'} fade-up" style="animation-delay:${i * 40}ms">
+              <div class="neighbor-meta">
+                <span class="nbr-rank">#${i + 1}</span>
+                <span class="nbr-badge ${n.label === 'ai' ? 'nbr-badge-ai' : 'nbr-badge-human'}">${n.label}</span>
+                <span class="nbr-sim">sim ${n.similarity.toFixed(3)}</span>
+              </div>
+              <p class="nbr-text">${esc(n.text_snippet)}</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="divider"></div>
+    ` : '';
 
-    // Time
-    document.getElementById('processingTime').textContent =
-      `Analyzed in ${data.processing_time_ms.toFixed(0)} ms  ·  model: ${data.model_used}`;
+    document.getElementById('results').innerHTML = `
+      <div class="prediction-card ${isAI ? 'card-ai' : 'card-human'} fade-up">
+        <div class="pred-icon ${isAI ? 'pred-icon-ai' : 'pred-icon-human'}">${isAI ? '🤖' : '🧑'}</div>
+        <div class="pred-body">
+          <div class="pred-label">Verdict</div>
+          <div class="pred-verdict ${isAI ? 'pred-verdict-ai' : 'pred-verdict-human'}">${isAI ? 'AI-Generated' : 'Human-Written'}</div>
+        </div>
+        <div class="pred-pct ${isAI ? 'pred-pct-ai' : 'pred-pct-human'}">${pct}%</div>
+      </div>
 
-    // Show results
+      <div class="conf-section fade-up" style="animation-delay:60ms">
+        <div class="conf-labels">
+          <span class="conf-title">Confidence breakdown</span>
+          <span class="conf-detail">${isAI ? 'AI' : 'Human'} · ${pct}%</span>
+        </div>
+        <div class="dual-bar">
+          <div class="dual-bar-ai"   id="dualAI"    style="width:0%"></div>
+          <div class="dual-bar-human" id="dualHuman" style="width:0%"></div>
+        </div>
+        <div class="dual-labels">
+          <span class="dual-lbl dual-lbl-ai">AI ${isAI ? pct : hPct}%</span>
+          <span class="dual-lbl dual-lbl-human">Human ${isAI ? hPct : pct}%</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      ${nbrsHTML}
+
+      <div class="result-footer fade-up" style="animation-delay:${80 + nbrs.length * 40}ms">
+        <span class="time-badge">⚡ ${data.processing_time_ms.toFixed(0)} ms</span>
+        <span class="model-badge">${data.model_used}</span>
+      </div>
+    `;
+
     document.getElementById('placeholder').style.display = 'none';
     document.getElementById('results').style.display = 'flex';
+
+    // Animate bars after paint
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const aiFrac   = isAI ? data.confidence : (1 - data.confidence);
+      const humFrac  = 1 - aiFrac;
+      document.getElementById('dualAI').style.width    = `${(aiFrac  * 100).toFixed(1)}%`;
+      document.getElementById('dualHuman').style.width = `${(humFrac * 100).toFixed(1)}%`;
+    }));
   }
 
-  // ── Utilities ─────────────────────────────────────────────────────────────
+  // ── Utilities ──────────────────────────────────────────────
   function esc(s) {
     return String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   function showError(msg) {
@@ -525,9 +866,9 @@
     document.getElementById('errorMsg').style.display = 'none';
   }
 
-  // ── Events ────────────────────────────────────────────────────────────────
+  // ── Events ─────────────────────────────────────────────────
   document.getElementById('submitBtn').addEventListener('click', analyze);
-  document.getElementById('textInput').addEventListener('keydown', e => {
+  textInput.addEventListener('keydown', e => {
     if (e.ctrlKey && e.key === 'Enter') analyze();
   });
 
