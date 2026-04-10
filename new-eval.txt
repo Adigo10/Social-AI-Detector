@@ -1,0 +1,26 @@
+What you're describing is a 2-phase evaluation strategy:
+
+Phase 1: Hyperparameter selection (all 4 teammates independently)
+- Train multiple runs with different LR + warmup combos (per the hyperparameter guide)
+- After each run, evaluate on standard val set only (val_balanced_with_rag.jsonl or without)
+- Pick the run with the best TPR@1%FPR on val -- that's your best model
+- This is purely internal to each person's condition
+
+Phase 2: Final benchmark (all 4 best models together)
+- Take the 4 winning checkpoints
+- Evaluate each on cross-model and adversarial (RAID) only
+- This gives the paper's main results table
+
+What this means for the scripts:
+
+Phase 1 needs a lightweight script, just standard val eval, fast, run after every training attempt.
+
+Phase 2 is exactly run_full_eval.py but with only cross-model and adversarial scenarios, not all 5.
+
+Proposed changes:
+
+1. New script src/eval/eval_val.py - Phase 1 only. Runs inference on val_balanced_with_rag.jsonl (or without), reports
+TPR@1%FPR. Fast, no RAID, no test splits. This is what everyone runs after each hyperparameter training run.
+2. Update run_full_eval.py - Keep only cross_model and adversarial. This
+becomes the Phase 2 final benchmark script.
+3. Update evaluate.sh SLURM script to match.

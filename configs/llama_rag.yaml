@@ -1,0 +1,48 @@
+# Llama 3.1 8B Instruct - QLoRA Fine-tuning with RAG Data
+# Config for AI-generated social media text detection
+
+# ── Model ──────────────────────────────────────────────
+model_name: "unsloth/Meta-Llama-3.1-8B-Instruct"
+max_seq_length: 2048
+load_in_4bit: true
+
+# ── LoRA ───────────────────────────────────────────────
+lora_rank: 32
+lora_alpha: 64
+lora_dropout: 0.05
+target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+
+# ── Data ───────────────────────────────────────────────
+train_file: "data/train_balanced_with_rag.jsonl"
+val_file: "data/val_with_rag.jsonl"
+max_val_samples: 5000
+seed: 42
+
+# ── Training ───────────────────────────────────────────
+num_train_epochs: 2
+per_device_train_batch_size: 4
+gradient_accumulation_steps: 8 # effective batch size = 32
+learning_rate: 5.0e-5
+lr_scheduler_type: "cosine"
+warmup_ratio: 0.05
+weight_decay: 0.01
+max_grad_norm: 1.0
+optim: "adamw_8bit"
+
+# ── Checkpointing ─────────────────────────────────────
+output_dir: "./checkpoints/llama-rag"
+save_strategy: "steps"
+save_steps: 2000
+save_total_limit: 3
+
+# ── Logging ────────────────────────────────────────────
+logging_steps: 50
+eval_strategy: "no"
+
+# ── W&B ────────────────────────────────────────────────
+wandb_entity: "social-media-detection"
+wandb_project: "llama-rag-finetune"

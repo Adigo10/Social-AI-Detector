@@ -1,0 +1,16 @@
+TEST SPLIT CLASS BALANCE
+=========================
+
+Split                  | Total  | AI     | Human  | AI%
+-----------------------|--------|--------|--------|-----
+standard               | 74,326 | 59,977 | 14,349 | 81%
+cross_model_chatgpt    | 26,879 | 26,879 |      0 | 100%
+cross_platform_qa_forum| 85,418 | 26,879 | 58,539 | 31%
+short_text             | 64,232 | 53,715 | 10,517 | 84%
+adversarial_raid       |671,391 |   N/A  |   N/A  | ext
+
+Notes:
+- cross_model is 100% AI by design (tests generalization to unseen model ChatGPT)
+- cross_platform flips to human-majority (QA forum has more human posts)
+- AUROC and TPR@1%FPR are unaffected by imbalance (rank-based metrics)
+- Accuracy numbers will be misleading for imbalanced splits

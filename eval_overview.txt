@@ -1,0 +1,39 @@
+Eval Script: src/eval/run_full_eval.py
+
+Active test setup now uses 3 scenarios. Load the model once, run selected subsets, results go to W&B and a local JSON.
+
+3 active scenarios:
+1. Standard        - main balanced test set
+2. Cross-model     - subset of standard, ChatGPT AI samples plus matched human negatives
+3. Cross-platform  - subset of standard, qa_forum samples only, balanced
+
+Inactive for now:
+- Short text
+- Adversarial / RAID
+
+Primary metric: TPR@1%FPR. Also reports AUROC, Macro-F1, Accuracy per scenario.
+
+For 4 conditions, commmands to be run:
+
+  # LLaMA + RAG
+  python src/eval/run_full_eval.py --model_name llama --model_path checkpoints/llama-rag/final
+
+  # LLaMA + no RAG
+  python src/eval/run_full_eval.py --model_name llama --no_rag --model_path checkpoints/llama-norag/final
+
+  # Qwen + RAG
+  python src/eval/run_full_eval.py --model_name qwen --model_path checkpoints/qwen-rag/final
+
+  # Qwen + no RAG
+  python src/eval/run_full_eval.py --model_name qwen --no_rag --model_path checkpoints/qwen-norag/final
+
+All 4 runs log to the same social-ai-detector W&B project under the team social-media-detection, so we can compare all conditions in one table. Each run is named eval__<model>__<with_rag/no_rag> to avoid any confusion.
+
+Results also saved locally inside the model folder as eval_results__<model>__<condition>.json.
+
+To run on the cluster: sbatch scripts/evaluate.sh
+
+Optional flags:
+  --max_samples 200     quick smoke-test before the full run
+  --skip_adversarial    legacy flag, inactive in the current 3-scenario setup
+  --no_wandb            skip W&B logging

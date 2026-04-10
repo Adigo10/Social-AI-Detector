@@ -130,3 +130,23 @@ notebooks/
 AI6130_Project_Proposal.md
 AI6130_Project_Proposal.pdf
 CLAUDE.md
+
+# ============================================================
+# Training & Cluster
+# ============================================================
+checkpoints/
+wandb/
+runs/
+results/
+output_*.out
+error_*.err
+*.ckpt
+processed/
+processed.zip
+cluster_upload.zip
+guide.pdf
+commands.md
+complete.zip
+image.png
+model.zip
+multisocial_anonymized.csv

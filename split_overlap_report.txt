@@ -1,0 +1,27 @@
+Split Exact Overlap Report
+
+Comparison method:
+- Exact overlap on `(instruction, output)`
+- Not fuzzy match
+- Not text-only match
+
+Expected:
+- Train / val / test overlap should be 0 under strict split hygiene
+
+With-RAG results:
+1. `test_balanced_with_rag.jsonl` vs `train_with_rag.jsonl`: 6 overlaps
+2. `test_balanced_with_rag.jsonl` vs `val_balanced_with_rag.jsonl`: 0 overlaps
+3. `test_with_rag.jsonl` vs `train_with_rag.jsonl`: 6 overlaps
+4. `test_with_rag.jsonl` vs `val_with_rag.jsonl`: 128 overlaps
+
+Without-RAG results:
+1. `test_balanced_without_rag.jsonl` vs `train_without_rag.jsonl`: 1173 overlaps
+2. `test_balanced_without_rag.jsonl` vs `val_balanced_without_rag.jsonl`: 266 overlaps
+3. `test_without_rag.jsonl` vs `train_without_rag.jsonl`: 1173 overlaps
+4. `test_without_rag.jsonl` vs `val_without_rag.jsonl`: 266 overlaps
+
+Validation vs Train results:
+1. `val_with_rag.jsonl` vs `train_with_rag.jsonl`: 8 overlaps
+2. `val_balanced_with_rag.jsonl` vs `train_with_rag.jsonl`: 8 overlaps
+3. `val_without_rag.jsonl` vs `train_without_rag.jsonl`: 1320 overlaps
+4. `val_balanced_without_rag.jsonl` vs `train_without_rag.jsonl`: 1320 overlaps
