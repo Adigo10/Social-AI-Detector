@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Social AI Detector</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --ai: #ef4444;
+      --ai-bg: #2d1515;
+      --ai-border: #7f1d1d;
+      --human: #22c55e;
+      --human-bg: #0f2318;
+      --human-border: #14532d;
+      --radius: 10px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 18px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header .subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-left: auto;
+    }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 32px 24px;
+      gap: 24px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      font-family: var(--font);
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238892a4' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+
+    select:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 12px;
+      font-size: 0.9rem;
+      font-family: var(--font);
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    textarea:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+    textarea::placeholder { color: var(--muted); }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    button#submitBtn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      align-self: flex-end;
+    }
+
+    button#submitBtn:hover:not(:disabled) { background: var(--accent-hover); }
+    button#submitBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Results panel */
+    #results { display: flex; flex-direction: column; gap: 20px; }
+
+    .result-placeholder {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      min-height: 300px;
+    }
+
+    .placeholder-icon { font-size: 2.5rem; opacity: 0.3; }
+
+    /* Prediction badge */
+    .badge {
+      display: inline-block;
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .badge-ai {
+      background: var(--ai-bg);
+      border: 1px solid var(--ai-border);
+      color: var(--ai);
+    }
+
+    .badge-human {
+      background: var(--human-bg);
+      border: 1px solid var(--human-border);
+      color: var(--human);
+    }
+
+    /* Confidence */
+    .confidence-section {}
+    .confidence-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .bar-track {
+      height: 8px;
+      background: var(--surface2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    .fill-ai   { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .fill-human { background: linear-gradient(90deg, #16a34a, #22c55e); }
+
+    /* Neighbor cards */
+    .neighbors-header {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .neighbors-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 360px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .neighbors-list::-webkit-scrollbar { width: 4px; }
+    .neighbors-list::-webkit-scrollbar-track { background: transparent; }
+    .neighbors-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .neighbor-card {
+      background: var(--surface2);
+      border-radius: 6px;
+      padding: 10px 12px;
+      border-left: 3px solid transparent;
+      font-size: 0.82rem;
+    }
+
+    .neighbor-card.card-ai    { border-left-color: var(--ai); }
+    .neighbor-card.card-human { border-left-color: var(--human); }
+
+    .neighbor-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+
+    .neighbor-rank { color: var(--muted); font-weight: 600; }
+
+    .neighbor-label-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .lbl-ai    { background: var(--ai-bg); color: var(--ai); border: 1px solid var(--ai-border); }
+    .lbl-human { background: var(--human-bg); color: var(--human); border: 1px solid var(--human-border); }
+
+    .neighbor-sim { margin-left: auto; color: var(--muted); font-size: 0.75rem; }
+
+    .neighbor-text {
+      color: var(--muted);
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    /* Processing time */
+    .processing-time {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    /* Error */
+    #errorMsg {
+      background: #2d1515;
+      border: 1px solid var(--ai-border);
+      color: #fca5a5;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      main { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="dot"></div>
+  <h1>Social AI Detector</h1>
+  <span class="subtitle">Classifies social media posts as AI-generated or human-written</span>
+</header>
+
+<main>
+  <!-- Input panel -->
+  <div class="panel">
+    <div class="panel-title">Input</div>
+
+    <div>
+      <label for="modelSelect">Detector model</label>
+      <select id="modelSelect"></select>
+    </div>
+
+    <div>
+      <label for="textInput">Post text</label>
+      <textarea
+        id="textInput"
+        placeholder="Paste a social media post here...&#10;&#10;Examples:&#10;  &quot;Just dropped my phone in the sink. Great start to Monday.&quot;&#10;  &quot;AI models demonstrate emergent capabilities that transcend traditional ML paradigms.&quot;"
+      ></textarea>
+      <div class="hint">Ctrl+Enter to submit</div>
+    </div>
+
+    <button id="submitBtn">Analyze</button>
+    <div id="errorMsg" style="display:none"></div>
+  </div>
+
+  <!-- Results panel -->
+  <div class="panel">
+    <div class="panel-title">Results</div>
+
+    <div id="placeholder" class="result-placeholder">
+      <div class="placeholder-icon">&#128269;</div>
+      <div>Enter a post and click Analyze</div>
+    </div>
+
+    <div id="results" style="display:none">
+      <div id="predictionBadge"></div>
+
+      <div class="confidence-section">
+        <div class="confidence-label">
+          <span id="confidenceLabel">AI confidence</span>
+          <span id="confidencePct"></span>
+        </div>
+        <div class="bar-track">
+          <div id="barFill" class="bar-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div id="neighborSection" style="display:none">
+        <div class="neighbors-header" id="neighborsHeader"></div>
+        <div class="neighbors-list" id="neighborList"></div>
+      </div>
+
+      <div class="processing-time" id="processingTime"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const API = '';   // same origin
+
+  // ── Model loader ──────────────────────────────────────────────────────────
+  async function loadModels() {
+    try {
+      const resp = await fetch(`${API}/api/models`);
+      const data = await resp.json();
+      const sel = document.getElementById('modelSelect');
+      sel.innerHTML = '';
+
+      const available = data.models.filter(m => m.available);
+      if (available.length === 0) {
+        sel.innerHTML = '<option value="">No models available</option>';
+        return;
+      }
+
+      available.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.name;
+        opt.textContent = `${m.name}  —  ${m.description}`;
+        if (m.name === 'ensemble') opt.selected = true;
+        sel.appendChild(opt);
+      });
+
+      // Fallback default: first available model
+      if (!available.find(m => m.name === 'ensemble')) {
+        sel.options[0].selected = true;
+      }
+    } catch (e) {
+      showError('Could not reach API: ' + e.message);
+    }
+  }
+
+  // ── Prediction ────────────────────────────────────────────────────────────
+  async function analyze() {
+    const text = document.getElementById('textInput').value.trim();
+    if (!text) { showError('Please enter some text.'); return; }
+
+    const model = document.getElementById('modelSelect').value;
+    if (!model) { showError('No model selected.'); return; }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Analyzing…';
+    hideError();
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('placeholder').style.display = 'flex';
+
+    try {
+      const resp = await fetch(`${API}/api/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, model }),
+      });
+
+      if (!resp.ok) {
+        let detail = `HTTP ${resp.status}`;
+        try { detail = (await resp.json()).detail; } catch (_) {}
+        showError(detail);
+        return;
+      }
+
+      const data = await resp.json();
+      renderResults(data);
+    } catch (e) {
+      showError('Network error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Analyze';
+    }
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  function renderResults(data) {
+    const isAI = data.prediction === 'ai';
+    const pct  = Math.round(data.confidence * 100);
+
+    // Badge
+    const badge = document.getElementById('predictionBadge');
+    badge.className = `badge ${isAI ? 'badge-ai' : 'badge-human'}`;
+    badge.textContent = isAI ? 'AI-Generated' : 'Human-Written';
+
+    // Confidence bar
+    document.getElementById('confidencePct').textContent = `${pct}%`;
+    const fill = document.getElementById('barFill');
+    fill.className = `bar-fill ${isAI ? 'fill-ai' : 'fill-human'}`;
+    fill.style.width = `${pct}%`;
+
+    // Neighbors
+    const nbrs = data.neighbors || [];
+    const nbrSection = document.getElementById('neighborSection');
+    if (nbrs.length > 0) {
+      const aiCount    = nbrs.filter(n => n.label === 'ai').length;
+      const humanCount = nbrs.length - aiCount;
+      document.getElementById('neighborsHeader').textContent =
+        `Nearest Neighbors  ·  ${aiCount} AI  /  ${humanCount} human  (of ${nbrs.length})`;
+      document.getElementById('neighborList').innerHTML = nbrs.map((n, i) => `
+        <div class="neighbor-card ${n.label === 'ai' ? 'card-ai' : 'card-human'}">
+          <div class="neighbor-meta">
+            <span class="neighbor-rank">#${i + 1}</span>
+            <span class="neighbor-label-badge ${n.label === 'ai' ? 'lbl-ai' : 'lbl-human'}">${n.label}</span>
+            <span class="neighbor-sim">sim ${n.similarity.toFixed(3)}</span>
+          </div>
+          <p class="neighbor-text">${esc(n.text_snippet)}</p>
+        </div>
+      `).join('');
+      nbrSection.style.display = 'block';
+    } else {
+      nbrSection.style.display = 'none';
+    }
+
+    // Time
+    document.getElementById('processingTime').textContent =
+      `Analyzed in ${data.processing_time_ms.toFixed(0)} ms  ·  model: ${data.model_used}`;
+
+    // Show results
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('results').style.display = 'flex';
+  }
+
+  // ── Utilities ─────────────────────────────────────────────────────────────
+  function esc(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function hideError() {
+    document.getElementById('errorMsg').style.display = 'none';
+  }
+
+  // ── Events ────────────────────────────────────────────────────────────────
+  document.getElementById('submitBtn').addEventListener('click', analyze);
+  document.getElementById('textInput').addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key === 'Enter') analyze();
+  });
+
+  loadModels();
+</script>
+</body>
+</html>
