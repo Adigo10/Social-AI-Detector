@@ -151,8 +151,50 @@ def fig_leakage_prevention():
     print(f"Saved {path}")
 
 
+# ── Figure 3: Dataset Composition ───────────────────────────────────────────
+def fig_dataset_composition():
+    fig, ax = plt.subplots(figsize=(8, 5))
+    fig.patch.set_facecolor(BG)
+    ax.set_facecolor(BG)
+
+    # Approximate counts derived from processed corpus (410,087 + 85,418 = 495,505)
+    datasets = ["MultiSocial", "HC3", "Total"]
+    ai_counts    = [352_675,  48_688, 401_363]
+    human_counts = [ 57_412,  36_730,  94_142]
+    totals       = [a + h for a, h in zip(ai_counts, human_counts)]
+
+    x = range(len(datasets))
+    bars_ai    = ax.bar(x, ai_counts,    color="#EF4444", label="AI-generated")
+    bars_human = ax.bar(x, human_counts, bottom=ai_counts, color="#60A5FA", label="Human")
+
+    # Percentage labels inside bars
+    for i, (a, h, t) in enumerate(zip(ai_counts, human_counts, totals)):
+        ax.text(i, a / 2,         f"{round(a/t*100)}%", ha="center", va="center",
+                fontsize=11, fontweight="bold", color="white")
+        ax.text(i, a + h / 2,     f"{round(h/t*100)}%", ha="center", va="center",
+                fontsize=11, fontweight="bold", color="white")
+
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(datasets, fontsize=12)
+    ax.set_ylabel("Records", fontsize=11)
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{int(v/1000)}K"))
+    ax.set_ylim(0, 550_000)
+    ax.legend(loc="upper left", fontsize=10)
+    ax.set_title("Dataset Composition — Processed Records",
+                 fontsize=13, fontweight="bold", color="#111827", pad=10)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    fig.patch.set_facecolor(BG)
+    plt.tight_layout()
+    path = os.path.join(OUT, "dataset_composition.png")
+    plt.savefig(path, dpi=150, bbox_inches="tight", facecolor=BG)
+    plt.close()
+    print(f"Saved {path}")
+
+
 if __name__ == "__main__":
     print("Generating figures...")
+    fig_dataset_composition()
     fig_pipeline()
     fig_leakage_prevention()
     print("Done. Figures saved to presentation/figures/")

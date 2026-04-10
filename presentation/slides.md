@@ -17,6 +17,10 @@ style: |
   table { font-size: 0.82em; border-collapse: collapse; width: 100%; }
   th { background: #DBEAFE; color: #1E3A8A; padding: 6px 10px; }
   td { padding: 5px 10px; border-bottom: 1px solid #E5E7EB; }
+  img {
+    display: block;
+    margin: 0.5rem auto;
+  }
   .tag {
     display: inline-block;
     background: #EDE9FE;
@@ -33,7 +37,7 @@ style: |
 
 # Data Preparation
 
-**Yu Taek Lee** · NTU AI6130 Group G30
+**NTU AI6130 Group G30**
 
 ---
 
@@ -45,19 +49,37 @@ Processed records used in this pipeline:
 
 | Dataset | Records | Description | Role |
 |---------|--------:|-------------|------|
-| **MultiSocial** | 410,087 | 7 AI models · 5 platforms · 22 languages | Training + eval |
+| **MultiSocial** | 410,087 | Social-text corpus · 22 languages · source tags spanning 5 platforms | Training + eval |
 | **HC3** | 85,418 | Processed human / ChatGPT answer records (English) | Training |
 | **RAID** | 671,391 | Adversarial eval texts (local `raid_eval.jsonl`) | Eval only |
 | **Total corpus** | **495,505** | MultiSocial + HC3 · stratified 70 / 15 / 15 | — |
 
-<br>
+![w:520](figures/dataset_composition.png)
 
-- MultiSocial: real social media posts across Twitter, Discord, Telegram, Gab, WhatsApp
+- MultiSocial includes source tags spanning Twitter, Discord, Telegram, Gab, and WhatsApp
 - RAID is kept **separate**: never mixed into training or validation
 
 ---
 
-<!-- ─── SLIDE 2: PIPELINE ──────────────────────────────────────── -->
+<!-- ─── SLIDE 2: DATASET DECISIONS ─────────────────────────────── -->
+
+## Key Design Decisions: Datasets
+
+### Dataset Boundary
+- MultiSocial + HC3 form the reusable training corpus
+- RAID stays eval-only to preserve adversarial benchmark integrity
+
+### Unified Schema
+- Column auto-discovery absorbs naming variation across datasets
+- One normalized schema keeps downstream training code dataset-agnostic
+
+### Text Cleaning Rules
+- URLs mapped to `[URL]`, whitespace collapsed, very short rows removed
+- Cleaning is deterministic so artifacts can be regenerated exactly
+
+---
+
+<!-- ─── SLIDE 3: PIPELINE ──────────────────────────────────────── -->
 
 ## Pipeline Architecture
 
@@ -68,28 +90,27 @@ Processed records used in this pipeline:
 
 ---
 
-<!-- ─── SLIDE 3: KEY DESIGN DECISIONS ────────────────────────── -->
+<!-- ─── SLIDE 4: PIPELINE DECISIONS ───────────────────────────── -->
 
-## Key Design Decisions
-
-### Unified Schema
-- Column auto-discovery handles naming variations across datasets
-- Text cleaning: URLs → `[URL]`, whitespace collapsed, < 5-word records dropped
+## Key Design Decisions: Pipeline
 
 ### Leakage Prevention
-![w:760 float:right](figures/leakage_prevention.png)
+![w:760](figures/leakage_prevention.png)
 - FAISS index built on **train split only**
 - Val/test query the index but are never indexed
 - Retrieval neighbors are always training examples
 
-### Class Imbalance
-- Raw corpus: 80.7% AI / 19.3% human (4.18 : 1)
-- Balanced variant: undersample → **50 / 50**, 133K records
-- Both variants provided; downstream team chooses
+### Resumability
+- Every stage writes a persistent artifact rather than keeping state in memory
+- Long embedding/index jobs can restart from checkpoints instead of from zero
+
+### Embedding Choice
+- Gemini Embedding 2 is used with CLASSIFICATION task type
+- 768-dim vectors balance retrieval quality and manageable storage cost
 
 ---
 
-<!-- ─── SLIDE 4: OUTPUTS ───────────────────────────────────────── -->
+<!-- ─── SLIDE 5: HANDOFF ──────────────────────────────────────── -->
 
 ## What Was Handed Off
 
@@ -106,3 +127,22 @@ Processed records used in this pipeline:
 <br>
 
 > **RAID embeddings: 450,000 / 671,391 (67%) saved in checkpoint.** Resumable if full adversarial evaluation is needed.
+
+---
+
+<!-- ─── SLIDE 6: HANDOFF DECISIONS ────────────────────────────── -->
+
+## Key Design Decisions: Handoff
+
+### Class Imbalance
+- Raw corpus: 80.7% AI / 19.3% human (4.18 : 1)
+- Balanced variant: undersample → **50 / 50**, 133K records
+- Both variants provided; downstream team chooses
+
+### Artifact Packaging
+- Shared artifacts are split by function: corpus, embeddings, index, and splits
+- This lets EDA, baseline models, and RAG pipelines consume the same foundation
+
+### Partial RAID Delivery
+- Checkpointed RAID embeddings were handed off instead of blocking on full completion
+- Team can resume adversarial evaluation later without rerunning completed work
