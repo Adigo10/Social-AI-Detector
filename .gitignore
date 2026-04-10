@@ -1,7 +1,7 @@
 # ============================================================
-# Claude Code
+# Claude Code (local skills, settings — not tracked)
 # ============================================================
-.claude/settings.local.json
+.claude/
 .omc/
 
 # ============================================================
@@ -124,6 +124,19 @@ docs/*.ko.md
 # ============================================================
 data/raw/
 data/processed/
+# Archives at repo root of data/ (directories above do not match *.zip files)
+data/*.zip
+data/**/*.zip
 *.npy
 *.index
 notebooks/
+
+# Experiment / run artifacts (local only)
+wandb/
+mlruns/
+
+# ============================================================
+# Personal exports (chat backups, media dumps — not project source)
+# ============================================================
+whatsapp/
+
