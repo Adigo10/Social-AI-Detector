@@ -27,8 +27,13 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output_dir",
-        default="model_mlx",
+        default="models/llama_mlx",
         help="Path to write the quantized MLX model.",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite output_dir if it already exists.",
     )
     parser.add_argument(
         "--no_quantize",
@@ -56,9 +61,15 @@ def main() -> None:
             f"Merged model not found at {input_dir}. Run scripts/merge_lora.py first."
         )
     if output_dir.exists():
-        raise FileExistsError(
-            f"Output directory already exists: {output_dir}. Remove it or pick a new --output_dir."
-        )
+        if args.force:
+            import shutil
+            log(f"--force: removing existing output directory {output_dir}")
+            shutil.rmtree(output_dir)
+        else:
+            raise FileExistsError(
+                f"Output directory already exists: {output_dir}. "
+                "Use --force to overwrite or pick a new --output_dir."
+            )
 
     require_mlx_lm()
 

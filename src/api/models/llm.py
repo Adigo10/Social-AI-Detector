@@ -120,7 +120,11 @@ class LlamaDetector(BaseDetector):
             # ------------------------------------------------------------------
             # Path 3: CPU — fp32 transformers (slow but works everywhere)
             # ------------------------------------------------------------------
-            from peft import PeftModel
+            try:
+                from peft import PeftModel
+            except ImportError as ie:
+                print(f"LlamaDetector: peft import failed ({ie}), CPU path unavailable.")
+                return
 
             print("LlamaDetector: WARNING — CPU inference will be very slow (~minutes/text).")
             tokenizer = AutoTokenizer.from_pretrained(adapter_path)
