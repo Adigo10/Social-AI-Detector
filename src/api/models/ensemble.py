@@ -37,7 +37,7 @@ class EnsembleDetector(BaseDetector):
     @property
     def description(self) -> str:
         status = "KNN+LLM" if self._llm.is_available() else "KNN-only (LLM unavailable)"
-        return f"Weighted ensemble α={self._alpha} ({status})"
+        return f"Weighted ensemble ({status})"
 
     def is_available(self) -> bool:
         return self._knn.is_available()
