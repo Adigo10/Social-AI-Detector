@@ -55,11 +55,8 @@ class EnsembleDetector(BaseDetector):
         knn_results = self._knn.predict(texts)
 
         if not self._llm.is_available():
-            # KNN-only fallback — annotate with alpha info for transparency
-            for r in knn_results:
-                r["knn_confidence"] = r["confidence"]
-                r["llm_confidence"] = None
-                r["alpha_used"] = 1.0  # effectively KNN-only
+            # KNN-only fallback — KNN already populates the breakdown fields
+            # (knn_confidence / llm_confidence / alpha_used) with the right shape.
             return knn_results
 
         # Step 2: LLM — reuse KNN neighbors for RAG context (no second FAISS query)

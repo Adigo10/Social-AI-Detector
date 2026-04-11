@@ -189,7 +189,14 @@ class LlamaDetector(BaseDetector):
 
             except Exception as e:
                 print(f"LlamaDetector.predict error on text {idx}: {e}")
-                results.append({"prediction": "human", "confidence": 0.5, "neighbors": []})
+                results.append({
+                    "prediction": "human",
+                    "confidence": 0.5,
+                    "neighbors": [],
+                    "knn_confidence": None,
+                    "llm_confidence": 0.5,
+                    "alpha_used": 0.0,
+                })
 
         return results
 
@@ -224,11 +231,14 @@ class LlamaDetector(BaseDetector):
             ),
             dim=0,
         )
-        confidence = float(probs[0])   # P(ai)
+        confidence = round(float(probs[0]), 4)   # P(ai)
         return {
             "prediction": "ai" if confidence >= 0.5 else "human",
             "confidence": confidence,
             "neighbors": [],
+            "knn_confidence": None,
+            "llm_confidence": confidence,
+            "alpha_used": 0.0,
         }
 
     def _predict_mlx(self, instruction: str) -> Dict[str, Any]:
@@ -255,10 +265,13 @@ class LlamaDetector(BaseDetector):
         max_l = max(ai_logit, human_logit)
         exp_ai = math.exp(ai_logit - max_l)
         exp_human = math.exp(human_logit - max_l)
-        confidence = exp_ai / (exp_ai + exp_human)   # P(ai)
+        confidence = round(exp_ai / (exp_ai + exp_human), 4)   # P(ai)
 
         return {
             "prediction": "ai" if confidence >= 0.5 else "human",
             "confidence": confidence,
             "neighbors": [],
+            "knn_confidence": None,
+            "llm_confidence": confidence,
+            "alpha_used": 0.0,
         }

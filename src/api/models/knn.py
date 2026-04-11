@@ -117,7 +117,14 @@ class KNNDetector(BaseDetector):
         results = []
         for i in range(total):
             if i in failed_indices:
-                results.append({"prediction": "human", "confidence": 0.5, "neighbors": []})
+                results.append({
+                    "prediction": "human",
+                    "confidence": 0.5,
+                    "neighbors": [],
+                    "knn_confidence": 0.5,
+                    "llm_confidence": None,
+                    "alpha_used": 1.0,
+                })
                 continue
 
             # Use [i:i+1] slice — guaranteed C-contiguous for FAISS
@@ -154,10 +161,14 @@ class KNNDetector(BaseDetector):
                 # Tie-break → "ai" (matches knn_baseline.py convention)
                 prediction = "ai" if ai_votes >= (total_votes - ai_votes) else "human"
 
+            confidence = round(confidence, 4)
             results.append({
                 "prediction": prediction,
                 "confidence": confidence,
                 "neighbors": neighbor_list,
+                "knn_confidence": confidence,
+                "llm_confidence": None,
+                "alpha_used": 1.0,
             })
 
         return results
