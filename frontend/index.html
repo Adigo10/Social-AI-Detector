@@ -110,12 +110,12 @@
     main {
       flex: 1;
       display: grid;
-      grid-template-columns: 420px 1fr;
-      gap: 20px;
-      max-width: 1280px;
+      grid-template-columns: 440px 1fr;
+      gap: 24px;
+      max-width: 1520px;
       margin: 0 auto;
       width: 100%;
-      padding: 32px 24px 48px;
+      padding: 32px 36px 52px;
       min-height: calc(100vh - 65px);
     }
 
@@ -272,7 +272,7 @@
       position: relative;
       flex: 1;
       min-height: 580px;
-      overflow: hidden;
+      overflow: visible;
     }
 
     .graph-svg {
@@ -296,6 +296,7 @@
       user-select: none;
       will-change: left, top;
       z-index: 2;
+      overflow: hidden;
       transition: box-shadow 0.3s, border-color 0.3s;
     }
 
