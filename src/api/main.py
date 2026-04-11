@@ -11,6 +11,7 @@ import asyncio
 import os
 import time
 from contextlib import asynccontextmanager
+from functools import partial
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -157,10 +158,17 @@ async def predict(body: PredictRequest, request: Request):
             detail=f"Model '{body.model}' is not available (check GPU / dependencies).",
         )
 
-    # Run synchronous predict() in thread pool so we don't block the event loop
+    # Run synchronous predict() in thread pool so we don't block the event loop.
+    # For the ensemble, pass through any per-request alpha override.
     t0 = time.perf_counter()
     loop = asyncio.get_running_loop()
-    results = await loop.run_in_executor(None, detector.predict, [text])
+
+    if body.model == "ensemble" and body.alpha is not None:
+        predict_fn = partial(detector.predict, alpha=body.alpha)
+    else:
+        predict_fn = detector.predict
+
+    results = await loop.run_in_executor(None, predict_fn, [text])
     elapsed_ms = (time.perf_counter() - t0) * 1000
 
     r = results[0]
@@ -177,6 +185,9 @@ async def predict(body: PredictRequest, request: Request):
             for n in r.get("neighbors", [])
         ],
         processing_time_ms=round(elapsed_ms, 1),
+        knn_confidence=r.get("knn_confidence"),
+        llm_confidence=r.get("llm_confidence"),
+        alpha_used=r.get("alpha_used"),
     )
 
 

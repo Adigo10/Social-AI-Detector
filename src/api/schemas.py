@@ -1,13 +1,20 @@
 """Pydantic request/response schemas for the Social-AI-Detector API."""
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PredictRequest(BaseModel):
     text: str
     model: str = "ensemble"
+    alpha: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Ensemble blend weight for KNN (0=LLM-only, 1=KNN-only). "
+                    "Only used when model='ensemble'. Falls back to server default if omitted.",
+    )
 
 
 class NeighborDetail(BaseModel):
@@ -22,6 +29,9 @@ class PredictResponse(BaseModel):
     model_used: str
     neighbors: List[NeighborDetail]
     processing_time_ms: float
+    knn_confidence: Optional[float] = None   # P(AI) from KNN alone
+    llm_confidence: Optional[float] = None   # P(AI) from LLM alone
+    alpha_used: Optional[float] = None       # actual α applied in ensemble
 
 
 class ModelInfo(BaseModel):

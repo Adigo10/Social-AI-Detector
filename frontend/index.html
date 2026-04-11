@@ -251,11 +251,94 @@
       font-variant-numeric: tabular-nums;
     }
 
+    /* ── Alpha slider ───────────────────────────────────────── */
+    .alpha-row {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .alpha-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .alpha-track-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+
+    .alpha-track-lbl {
+      font-size: 0.68rem;
+      color: var(--text-faint);
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(
+        to right,
+        var(--accent) 0%,
+        var(--accent) var(--pct, 50%),
+        var(--bg2) var(--pct, 50%),
+        var(--bg2) 100%
+      );
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 6px var(--accent-glow);
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px; height: 14px;
+      border: none;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 6px var(--accent-glow);
+      cursor: pointer;
+    }
+
+    .alpha-val {
+      font-size: 0.8rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--accent);
+      min-width: 32px;
+      text-align: right;
+    }
+
     /* ── Submit button ──────────────────────────────────────── */
     .btn-row {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
     }
+
+    #clearBtn {
+      background: transparent;
+      color: var(--text-faint);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      font-size: 0.82rem;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    #clearBtn:hover { color: var(--text-dim); border-color: var(--border-hov); }
 
     #submitBtn {
       background: linear-gradient(135deg, var(--accent), var(--accent2));
@@ -628,6 +711,61 @@
 
     .fade-up { animation: fadeUp 0.3s ease both; }
 
+    /* ── Detector breakdown ─────────────────────────────────── */
+    .detector-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .detector-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .det-lbl {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      width: 36px;
+      color: var(--text-faint);
+    }
+
+    .det-bar-track {
+      flex: 1;
+      height: 5px;
+      background: var(--bg2);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .det-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    .det-bar-fill-knn { background: linear-gradient(90deg, #6366f1, #818cf8); }
+    .det-bar-fill-llm { background: linear-gradient(90deg, #8b5cf6, #c4b5fd); }
+
+    .det-pct {
+      font-size: 0.7rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-dim);
+      width: 34px;
+      text-align: right;
+    }
+
+    .breakdown-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+
     /* ── Responsive ─────────────────────────────────────────── */
     @media (max-width: 780px) {
       main { grid-template-columns: 1fr; padding: 20px 16px 40px; }
@@ -659,6 +797,19 @@
       <select id="modelSelect"></select>
     </div>
 
+    <!-- Alpha slider (ensemble only) -->
+    <div class="alpha-row field" id="alphaRow" style="display:none">
+      <div class="alpha-label-row">
+        <span class="field-label">Ensemble weight (α)</span>
+        <span class="alpha-val" id="alphaVal">0.50</span>
+      </div>
+      <input type="range" id="alphaSlider" min="0" max="1" step="0.05" value="0.5">
+      <div class="alpha-track-labels">
+        <span class="alpha-track-lbl">← LLM-only (0.0)</span>
+        <span class="alpha-track-lbl">(1.0) KNN-only →</span>
+      </div>
+    </div>
+
     <div class="field">
       <span class="field-label">Post text</span>
       <div class="textarea-wrap">
@@ -669,11 +820,12 @@
       </div>
       <div class="textarea-footer">
         <span class="hint">Ctrl + Enter to analyze</span>
-        <span id="charCount">0 chars</span>
+        <span id="charCount">0 chars · 0 words</span>
       </div>
     </div>
 
     <div class="btn-row">
+      <button id="clearBtn" type="button">Clear</button>
       <button id="submitBtn">Analyze</button>
     </div>
 
@@ -699,13 +851,32 @@
 <script>
   const API = '';
 
-  // ── Character counter ──────────────────────────────────────
+  // ── Character / word counter ───────────────────────────────
   const textInput = document.getElementById('textInput');
   const charCount = document.getElementById('charCount');
-  textInput.addEventListener('input', () => {
-    const n = textInput.value.length;
-    charCount.textContent = `${n.toLocaleString()} char${n !== 1 ? 's' : ''}`;
-  });
+  textInput.addEventListener('input', updateCounter);
+
+  function updateCounter() {
+    const val = textInput.value;
+    const chars = val.length;
+    const words = val.trim() === '' ? 0 : val.trim().split(/\s+/).length;
+    charCount.textContent =
+      `${chars.toLocaleString()} char${chars !== 1 ? 's' : ''} · ${words.toLocaleString()} word${words !== 1 ? 's' : ''}`;
+  }
+
+  // ── Alpha slider ───────────────────────────────────────────
+  const alphaSlider = document.getElementById('alphaSlider');
+  const alphaVal    = document.getElementById('alphaVal');
+  const alphaRow    = document.getElementById('alphaRow');
+
+  function syncSlider() {
+    const v = parseFloat(alphaSlider.value);
+    alphaVal.textContent = v.toFixed(2);
+    alphaSlider.style.setProperty('--pct', `${v * 100}%`);
+  }
+
+  alphaSlider.addEventListener('input', syncSlider);
+  syncSlider();
 
   // ── Model loader ───────────────────────────────────────────
   async function loadModels() {
@@ -727,10 +898,28 @@
         sel.appendChild(opt);
       });
       if (!available.find(m => m.name === 'ensemble')) sel.options[0].selected = true;
+      updateAlphaVisibility();
     } catch (e) {
       showError('Could not reach API: ' + e.message);
     }
   }
+
+  function updateAlphaVisibility() {
+    const model = document.getElementById('modelSelect').value;
+    alphaRow.style.display = model === 'ensemble' ? 'flex' : 'none';
+  }
+
+  document.getElementById('modelSelect').addEventListener('change', updateAlphaVisibility);
+
+  // ── Clear ──────────────────────────────────────────────────
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    textInput.value = '';
+    updateCounter();
+    hideError();
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('placeholder').style.display = 'flex';
+    textInput.focus();
+  });
 
   // ── Prediction ─────────────────────────────────────────────
   async function analyze() {
@@ -746,11 +935,16 @@
     document.getElementById('results').style.display = 'none';
     document.getElementById('placeholder').style.display = 'flex';
 
+    const payload = { text, model };
+    if (model === 'ensemble') {
+      payload.alpha = parseFloat(alphaSlider.value);
+    }
+
     try {
       const resp = await fetch(`${API}/api/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, model }),
+        body: JSON.stringify(payload),
       });
       if (!resp.ok) {
         let detail = `HTTP ${resp.status}`;
@@ -773,9 +967,39 @@
     const pct   = Math.round(data.confidence * 100);
     const hPct  = 100 - pct;
 
-    const nbrs      = data.neighbors || [];
-    const aiCount   = nbrs.filter(n => n.label === 'ai').length;
-    const humCount  = nbrs.length - aiCount;
+    const nbrs     = data.neighbors || [];
+    const aiCount  = nbrs.filter(n => n.label === 'ai').length;
+    const humCount = nbrs.length - aiCount;
+
+    // Detector breakdown (ensemble only)
+    let breakdownHTML = '';
+    if (data.knn_confidence != null || data.llm_confidence != null) {
+      const knnPct = data.knn_confidence != null ? Math.round(data.knn_confidence * 100) : null;
+      const llmPct = data.llm_confidence != null ? Math.round(data.llm_confidence * 100) : null;
+      const alphaLabel = data.alpha_used != null ? `α=${data.alpha_used.toFixed(2)}` : '';
+      breakdownHTML = `
+        <div class="detector-breakdown fade-up" style="animation-delay:80ms">
+          <div class="breakdown-title">Detector breakdown ${alphaLabel ? `<span style="font-weight:400;color:var(--text-faint)">(${alphaLabel})</span>` : ''}</div>
+          ${knnPct != null ? `
+          <div class="detector-row">
+            <span class="det-lbl">KNN</span>
+            <div class="det-bar-track">
+              <div class="det-bar-fill det-bar-fill-knn" id="knnBar" style="width:0%"></div>
+            </div>
+            <span class="det-pct">${knnPct}% AI</span>
+          </div>` : ''}
+          ${llmPct != null ? `
+          <div class="detector-row">
+            <span class="det-lbl">LLM</span>
+            <div class="det-bar-track">
+              <div class="det-bar-fill det-bar-fill-llm" id="llmBar" style="width:0%"></div>
+            </div>
+            <span class="det-pct">${llmPct}% AI</span>
+          </div>` : ''}
+        </div>
+        <div class="divider"></div>
+      `;
+    }
 
     const nbrsHTML = nbrs.length > 0 ? `
       <div>
@@ -802,6 +1026,11 @@
       <div class="divider"></div>
     ` : '';
 
+    const footerDelay = 80 + nbrs.length * 40;
+    const modelLabel  = data.alpha_used != null
+      ? `${data.model_used} · α=${data.alpha_used.toFixed(2)}`
+      : data.model_used;
+
     document.getElementById('results').innerHTML = `
       <div class="prediction-card ${isAI ? 'card-ai' : 'card-human'} fade-up">
         <div class="pred-icon ${isAI ? 'pred-icon-ai' : 'pred-icon-human'}">${isAI ? '🤖' : '🧑'}</div>
@@ -818,7 +1047,7 @@
           <span class="conf-detail">${isAI ? 'AI' : 'Human'} · ${pct}%</span>
         </div>
         <div class="dual-bar">
-          <div class="dual-bar-ai"   id="dualAI"    style="width:0%"></div>
+          <div class="dual-bar-ai"    id="dualAI"    style="width:0%"></div>
           <div class="dual-bar-human" id="dualHuman" style="width:0%"></div>
         </div>
         <div class="dual-labels">
@@ -829,11 +1058,12 @@
 
       <div class="divider"></div>
 
+      ${breakdownHTML}
       ${nbrsHTML}
 
-      <div class="result-footer fade-up" style="animation-delay:${80 + nbrs.length * 40}ms">
+      <div class="result-footer fade-up" style="animation-delay:${footerDelay}ms">
         <span class="time-badge">⚡ ${data.processing_time_ms.toFixed(0)} ms</span>
-        <span class="model-badge">${data.model_used}</span>
+        <span class="model-badge">${modelLabel}</span>
       </div>
     `;
 
@@ -842,10 +1072,19 @@
 
     // Animate bars after paint
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      const aiFrac   = isAI ? data.confidence : (1 - data.confidence);
-      const humFrac  = 1 - aiFrac;
+      const aiFrac  = isAI ? data.confidence : (1 - data.confidence);
+      const humFrac = 1 - aiFrac;
       document.getElementById('dualAI').style.width    = `${(aiFrac  * 100).toFixed(1)}%`;
       document.getElementById('dualHuman').style.width = `${(humFrac * 100).toFixed(1)}%`;
+
+      if (data.knn_confidence != null) {
+        const knnEl = document.getElementById('knnBar');
+        if (knnEl) knnEl.style.width = `${(data.knn_confidence * 100).toFixed(1)}%`;
+      }
+      if (data.llm_confidence != null) {
+        const llmEl = document.getElementById('llmBar');
+        if (llmEl) llmEl.style.width = `${(data.llm_confidence * 100).toFixed(1)}%`;
+      }
     }));
   }
 
