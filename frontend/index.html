@@ -40,7 +40,6 @@
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     html { scroll-behavior: smooth; }
 
     body {
@@ -54,7 +53,6 @@
       overflow-x: hidden;
     }
 
-    /* ── Mesh background ────────────────────────────────────── */
     body::before {
       content: '';
       position: fixed;
@@ -83,55 +81,42 @@
       z-index: 100;
     }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .logo { display: flex; align-items: center; gap: 10px; }
 
     .logo-icon {
       width: 30px; height: 30px;
       border-radius: 8px;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       font-size: 14px;
       box-shadow: 0 0 18px var(--accent-glow);
       flex-shrink: 0;
     }
 
     .logo-text {
-      font-size: 1rem;
-      font-weight: 700;
-      letter-spacing: -0.025em;
+      font-size: 1rem; font-weight: 700; letter-spacing: -0.025em;
       background: linear-gradient(135deg, #e8eaf0 30%, #9ca3f4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
 
     .header-pill {
       margin-left: auto;
-      font-size: 0.72rem;
-      color: var(--text-dim);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 4px 12px;
-      letter-spacing: 0.01em;
+      font-size: 0.72rem; color: var(--text-dim);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 999px; padding: 4px 12px; letter-spacing: 0.01em;
     }
 
     /* ── Layout ─────────────────────────────────────────────── */
     main {
       flex: 1;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 420px 1fr;
       gap: 20px;
-      max-width: 1180px;
+      max-width: 1280px;
       margin: 0 auto;
       width: 100%;
       padding: 32px 24px 48px;
+      min-height: calc(100vh - 65px);
     }
 
     /* ── Panel ──────────────────────────────────────────────── */
@@ -149,628 +134,365 @@
 
     .panel:hover { border-color: var(--border-hov); }
 
+    .panel-graph {
+      padding: 20px;
+      overflow: hidden;
+      position: relative;
+    }
+
     .panel-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      display: flex; align-items: center; gap: 8px;
+      flex-shrink: 0;
     }
 
     .panel-icon {
-      width: 22px; height: 22px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
+      width: 22px; height: 22px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center; font-size: 11px;
     }
 
     .panel-icon-input  { background: rgba(99,102,241,0.2); }
     .panel-icon-result { background: rgba(139,92,246,0.2); }
 
     .panel-title {
-      font-size: 0.72rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-dim);
+      font-size: 0.72rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim);
     }
 
     /* ── Form controls ──────────────────────────────────────── */
     .field { display: flex; flex-direction: column; gap: 7px; }
-
-    .field-label {
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: var(--text-dim);
-    }
+    .field-label { font-size: 0.8rem; font-weight: 500; color: var(--text-dim); }
 
     select {
       width: 100%;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text);
-      padding: 9px 36px 9px 13px;
-      font-size: 0.875rem;
-      font-family: var(--font);
-      font-weight: 500;
-      cursor: pointer;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      padding: 9px 36px 9px 13px; font-size: 0.875rem;
+      font-family: var(--font); font-weight: 500; cursor: pointer;
       appearance: none;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%239099b0' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 13px center;
+      background-repeat: no-repeat; background-position: right 13px center;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
 
-    select:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
-    }
+    select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 
     .textarea-wrap { position: relative; }
 
     textarea {
-      width: 100%;
-      min-height: 210px;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text);
-      padding: 13px;
-      font-size: 0.875rem;
-      font-family: var(--font);
-      resize: vertical;
-      line-height: 1.65;
+      width: 100%; min-height: 210px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      padding: 13px; font-size: 0.875rem; font-family: var(--font);
+      resize: vertical; line-height: 1.65;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
 
-    textarea:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
-    }
-
+    textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
     textarea::placeholder { color: var(--text-faint); }
 
-    .textarea-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 6px;
-    }
-
-    .hint {
-      font-size: 0.72rem;
-      color: var(--text-faint);
-    }
-
-    #charCount {
-      font-size: 0.72rem;
-      color: var(--text-faint);
-      font-variant-numeric: tabular-nums;
-    }
+    .textarea-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+    .hint { font-size: 0.72rem; color: var(--text-faint); }
+    #charCount { font-size: 0.72rem; color: var(--text-faint); font-variant-numeric: tabular-nums; }
 
     /* ── Alpha slider ───────────────────────────────────────── */
-    .alpha-row {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
-
-    .alpha-label-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .alpha-track-labels {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 4px;
-    }
-
-    .alpha-track-lbl {
-      font-size: 0.68rem;
-      color: var(--text-faint);
-    }
+    .alpha-row { display: flex; flex-direction: column; gap: 7px; }
+    .alpha-label-row { display: flex; justify-content: space-between; align-items: center; }
+    .alpha-track-labels { display: flex; justify-content: space-between; margin-top: 4px; }
+    .alpha-track-lbl { font-size: 0.68rem; color: var(--text-faint); }
 
     input[type="range"] {
-      -webkit-appearance: none;
-      width: 100%;
-      height: 4px;
-      border-radius: 999px;
-      background: linear-gradient(
-        to right,
-        var(--accent) 0%,
-        var(--accent) var(--pct, 50%),
-        var(--bg2) var(--pct, 50%),
-        var(--bg2) 100%
-      );
-      outline: none;
-      cursor: pointer;
+      -webkit-appearance: none; width: 100%; height: 4px; border-radius: 999px;
+      background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--pct, 50%), var(--bg2) var(--pct, 50%), var(--bg2) 100%);
+      outline: none; cursor: pointer;
     }
 
     input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 14px; height: 14px;
-      border-radius: 50%;
-      background: #fff;
-      box-shadow: 0 0 6px var(--accent-glow);
-      cursor: pointer;
+      -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+      background: #fff; box-shadow: 0 0 6px var(--accent-glow); cursor: pointer;
     }
 
     input[type="range"]::-moz-range-thumb {
-      width: 14px; height: 14px;
-      border: none;
-      border-radius: 50%;
-      background: #fff;
-      box-shadow: 0 0 6px var(--accent-glow);
-      cursor: pointer;
+      width: 14px; height: 14px; border: none; border-radius: 50%;
+      background: #fff; box-shadow: 0 0 6px var(--accent-glow); cursor: pointer;
     }
 
-    .alpha-val {
-      font-size: 0.8rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      color: var(--accent);
-      min-width: 32px;
-      text-align: right;
-    }
+    .alpha-val { font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent); min-width: 32px; text-align: right; }
 
     /* ── Submit button ──────────────────────────────────────── */
-    .btn-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-    }
+    .btn-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 
     #clearBtn {
-      background: transparent;
-      color: var(--text-faint);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 10px 16px;
-      font-size: 0.82rem;
-      font-family: var(--font);
-      cursor: pointer;
-      transition: color 0.15s, border-color 0.15s;
+      background: transparent; color: var(--text-faint);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 10px 16px; font-size: 0.82rem; font-family: var(--font);
+      cursor: pointer; transition: color 0.15s, border-color 0.15s;
     }
 
     #clearBtn:hover { color: var(--text-dim); border-color: var(--border-hov); }
 
     #submitBtn {
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff;
-      border: none;
-      border-radius: var(--radius-sm);
-      padding: 10px 24px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      font-family: var(--font);
-      cursor: pointer;
-      letter-spacing: 0.01em;
+      color: #fff; border: none; border-radius: var(--radius-sm);
+      padding: 10px 24px; font-size: 0.875rem; font-weight: 600;
+      font-family: var(--font); cursor: pointer; letter-spacing: 0.01em;
       transition: opacity 0.15s, transform 0.1s, box-shadow 0.2s;
       box-shadow: 0 0 20px var(--accent-glow);
-      display: flex;
-      align-items: center;
-      gap: 7px;
+      display: flex; align-items: center; gap: 7px;
     }
 
-    #submitBtn:hover:not(:disabled) {
-      opacity: 0.9;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 28px var(--accent-glow);
-    }
-
+    #submitBtn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 28px var(--accent-glow); }
     #submitBtn:active:not(:disabled) { transform: translateY(0); }
-
-    #submitBtn:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
+    #submitBtn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
 
     /* ── Error ──────────────────────────────────────────────── */
     #errorMsg {
-      background: rgba(239,68,68,0.1);
-      border: 1px solid var(--ai-border);
-      color: #fca5a5;
-      border-radius: var(--radius-sm);
-      padding: 10px 14px;
-      font-size: 0.82rem;
-      line-height: 1.5;
+      background: rgba(239,68,68,0.1); border: 1px solid var(--ai-border);
+      color: #fca5a5; border-radius: var(--radius-sm);
+      padding: 10px 14px; font-size: 0.82rem; line-height: 1.5;
     }
 
     /* ── Placeholder ────────────────────────────────────────── */
     .result-placeholder {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      min-height: 280px;
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; min-height: 400px;
     }
 
     .placeholder-orb {
-      width: 64px; height: 64px;
-      border-radius: 50%;
-      background: var(--surface-hov);
-      border: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 26px;
-      opacity: 0.5;
+      width: 64px; height: 64px; border-radius: 50%;
+      background: var(--surface-hov); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; opacity: 0.5;
     }
 
-    .placeholder-text {
-      font-size: 0.85rem;
-      color: var(--text-faint);
-      font-weight: 500;
+    .placeholder-text { font-size: 0.85rem; color: var(--text-faint); font-weight: 500; }
+
+    /* ── Graph Canvas ───────────────────────────────────────── */
+    .graph-canvas {
+      position: relative;
+      flex: 1;
+      min-height: 580px;
+      overflow: hidden;
     }
 
-    /* ── Results ────────────────────────────────────────────── */
-    #results { display: flex; flex-direction: column; gap: 22px; }
+    .graph-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      overflow: visible;
+    }
 
-    /* Prediction card */
-    .prediction-card {
+    /* ── Graph Nodes ────────────────────────────────────────── */
+    .graph-node {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      background: rgba(8, 11, 22, 0.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.09);
       border-radius: var(--radius);
-      padding: 18px 20px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      border: 1px solid;
-      transition: box-shadow 0.3s;
-    }
-
-    .prediction-card.card-ai {
-      background: var(--ai-dim);
-      border-color: var(--ai-border);
-      box-shadow: 0 0 30px var(--ai-glow);
-    }
-
-    .prediction-card.card-human {
-      background: var(--human-dim);
-      border-color: var(--human-border);
-      box-shadow: 0 0 30px var(--human-glow);
-    }
-
-    .pred-icon {
-      width: 42px; height: 42px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      flex-shrink: 0;
-    }
-
-    .pred-icon-ai    { background: rgba(239,68,68,0.2); }
-    .pred-icon-human { background: rgba(52,211,153,0.15); }
-
-    .pred-body { flex: 1; }
-
-    .pred-label {
-      font-size: 0.72rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-dim);
-      margin-bottom: 3px;
-    }
-
-    .pred-verdict {
-      font-size: 1.2rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
-
-    .pred-verdict-ai    { color: var(--ai); }
-    .pred-verdict-human { color: var(--human); }
-
-    .pred-pct {
-      font-size: 1.5rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .pred-pct-ai    { color: var(--ai); }
-    .pred-pct-human { color: var(--human); }
-
-    /* Confidence bar */
-    .conf-section {}
-
-    .conf-labels {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .conf-title {
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--text-dim);
-    }
-
-    .conf-detail {
-      font-size: 0.72rem;
-      color: var(--text-faint);
-    }
-
-    .bar-track {
-      height: 6px;
-      background: var(--bg2);
-      border-radius: 999px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-
-    .bar-fill {
-      height: 100%;
-      border-radius: 999px;
-      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    .fill-ai    { background: linear-gradient(90deg, #ef4444, #fca5a5); }
-    .fill-human { background: linear-gradient(90deg, #059669, #34d399); }
-
-    /* Dual bar (AI vs Human) */
-    .dual-bar {
-      display: flex;
-      height: 6px;
-      border-radius: 999px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      background: var(--bg2);
-    }
-
-    .dual-bar-ai {
-      background: linear-gradient(90deg, #ef4444, #f87171);
-      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-      height: 100%;
-    }
-
-    .dual-bar-human {
-      background: linear-gradient(90deg, #34d399, #6ee7b7);
-      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-      height: 100%;
-      margin-left: auto;
-    }
-
-    .dual-labels {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 6px;
-    }
-
-    .dual-lbl {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
-    .dual-lbl-ai    { color: var(--ai); }
-    .dual-lbl-human { color: var(--human); }
-
-    /* Divider */
-    .divider {
-      height: 1px;
-      background: var(--border);
-    }
-
-    /* Neighbors */
-    .nbr-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
-    .nbr-title {
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .nbr-stats {
-      display: flex;
-      gap: 6px;
-    }
-
-    .nbr-stat {
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 999px;
-    }
-
-    .nbr-stat-ai    { background: var(--ai-dim); color: var(--ai); border: 1px solid var(--ai-border); }
-    .nbr-stat-human { background: var(--human-dim); color: var(--human); border: 1px solid var(--human-border); }
-
-    .neighbors-list {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-      max-height: 320px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-
-    .neighbors-list::-webkit-scrollbar { width: 3px; }
-    .neighbors-list::-webkit-scrollbar-track { background: transparent; }
-    .neighbors-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-    .neighbor-card {
-      background: rgba(255,255,255,0.03);
-      border-radius: var(--radius-sm);
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-left-width: 2px;
-      font-size: 0.8rem;
-      transition: background 0.15s, border-color 0.15s;
       cursor: default;
+      user-select: none;
+      will-change: left, top;
+      z-index: 2;
+      transition: box-shadow 0.3s, border-color 0.3s;
     }
 
-    .neighbor-card:hover { background: var(--surface-hov); }
-
-    .neighbor-card.card-ai    { border-left-color: var(--ai); }
-    .neighbor-card.card-human { border-left-color: var(--human); }
-
-    .neighbor-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
+    .graph-node:hover {
+      z-index: 20;
+      border-color: rgba(255,255,255,0.2);
     }
 
-    .nbr-rank {
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: var(--text-faint);
-      width: 20px;
+    /* Root verdict node */
+    .gn-root {
+      padding: 20px 26px;
+      text-align: center;
+      min-width: 170px;
     }
 
-    .nbr-badge {
-      font-size: 0.65rem;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 999px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+    .gn-root.gn-ai {
+      border-color: rgba(239,68,68,0.45);
+      box-shadow: 0 0 50px rgba(239,68,68,0.2), 0 0 100px rgba(239,68,68,0.08), inset 0 0 30px rgba(239,68,68,0.04);
     }
 
-    .nbr-badge-ai    { background: var(--ai-dim); color: var(--ai); border: 1px solid var(--ai-border); }
-    .nbr-badge-human { background: var(--human-dim); color: var(--human); border: 1px solid var(--human-border); }
-
-    .nbr-sim {
-      margin-left: auto;
-      font-size: 0.7rem;
-      color: var(--text-faint);
-      font-variant-numeric: tabular-nums;
-      font-weight: 500;
+    .gn-root.gn-human {
+      border-color: rgba(52,211,153,0.45);
+      box-shadow: 0 0 50px rgba(52,211,153,0.18), 0 0 100px rgba(52,211,153,0.07), inset 0 0 30px rgba(52,211,153,0.04);
     }
 
-    .nbr-text {
-      color: var(--text-dim);
-      line-height: 1.5;
-      word-break: break-word;
+    .gn-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; margin: 0 auto 10px;
     }
 
-    /* Footer row */
-    .result-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    .gni-ai    { background: rgba(239,68,68,0.18); }
+    .gni-human { background: rgba(52,211,153,0.14); }
+
+    .gn-label {
+      font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--text-faint); margin-bottom: 4px;
     }
 
-    .time-badge {
-      font-size: 0.7rem;
-      color: var(--text-faint);
-      background: var(--surface-hov);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 3px 10px;
-      font-variant-numeric: tabular-nums;
+    .gn-verdict { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 6px; }
+    .gnv-ai    { color: var(--ai); }
+    .gnv-human { color: var(--human); }
+
+    .gn-pct { font-size: 2rem; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; line-height: 1; }
+    .gnp-ai    { color: var(--ai); }
+    .gnp-human { color: var(--human); }
+
+    /* Confidence node */
+    .gn-conf {
+      padding: 14px 16px;
+      min-width: 165px;
     }
 
-    .model-badge {
-      font-size: 0.7rem;
-      color: var(--text-dim);
-      background: rgba(99,102,241,0.1);
-      border: 1px solid rgba(99,102,241,0.2);
-      border-radius: 999px;
-      padding: 3px 10px;
+    .gn-label-sm {
+      font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-faint); margin-bottom: 10px;
+    }
+
+    .gn-dual-bar {
+      display: flex; height: 5px; border-radius: 999px;
+      overflow: hidden; background: var(--bg2);
+      border: 1px solid var(--border); margin-bottom: 7px;
+    }
+
+    .gn-bar-ai    { background: linear-gradient(90deg, #ef4444, #f87171); height: 100%; transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1); }
+    .gn-bar-human { background: linear-gradient(90deg, #34d399, #6ee7b7); height: 100%; transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1); }
+
+    .gn-dual-labels { display: flex; justify-content: space-between; }
+    .gn-lbl-ai    { font-size: 0.68rem; font-weight: 700; color: var(--ai); }
+    .gn-lbl-human { font-size: 0.68rem; font-weight: 700; color: var(--human); }
+
+    /* Detector nodes (KNN / LLM) */
+    .gn-detector {
+      padding: 12px 16px;
+      min-width: 120px;
+      text-align: center;
+    }
+
+    .gn-knn { border-color: rgba(99,102,241,0.35); box-shadow: 0 0 24px rgba(99,102,241,0.12); }
+    .gn-llm { border-color: rgba(139,92,246,0.35); box-shadow: 0 0 24px rgba(139,92,246,0.12); }
+
+    .gn-det-label {
+      font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--text-faint); margin-bottom: 4px;
+    }
+
+    .gn-det-pct { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--text); margin-bottom: 6px; }
+
+    .gn-det-bar-track {
+      height: 4px; background: var(--bg2); border-radius: 999px;
+      overflow: hidden; border: 1px solid var(--border); margin-bottom: 5px;
+    }
+
+    .gn-det-bar-fill { height: 100%; border-radius: 999px; transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1); }
+    .gn-det-knn { background: linear-gradient(90deg, #6366f1, #818cf8); }
+    .gn-det-llm { background: linear-gradient(90deg, #8b5cf6, #c4b5fd); }
+
+    .gn-det-sub { font-size: 0.6rem; color: var(--text-faint); }
+
+    /* Ensemble calc node */
+    .gn-ensemble {
+      padding: 14px 18px;
+      min-width: 200px;
+      border-color: rgba(99,102,241,0.4);
+      box-shadow: 0 0 30px rgba(99,102,241,0.14), inset 0 0 20px rgba(99,102,241,0.03);
+    }
+
+    .gn-ens-title {
+      font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--text-faint); margin-bottom: 8px;
+    }
+
+    .gn-ens-formula {
+      font-size: 0.72rem; color: var(--text-faint); margin-bottom: 8px;
+      font-style: italic;
+    }
+
+    .gn-ens-row {
+      font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px; line-height: 1.6;
+    }
+
+    .gn-ens-alpha { color: var(--accent); font-weight: 700; }
+    .gn-ens-kval  { color: #818cf8; font-weight: 700; }
+    .gn-ens-lval  { color: #c4b5fd; font-weight: 700; }
+
+    .gn-ens-divider {
+      height: 1px; background: var(--border); margin: 8px 0;
+    }
+
+    .gn-ens-result {
+      font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums; color: var(--accent);
+    }
+
+    /* Neighbor nodes */
+    .gn-neighbor {
+      padding: 8px 10px;
+      max-width: 138px;
+      min-width: 100px;
+    }
+
+    .gn-nbr-ai    { border-left: 2px solid var(--ai); }
+    .gn-nbr-human { border-left: 2px solid var(--human); }
+    .gn-nbr-ai:hover    { box-shadow: 0 0 20px rgba(239,68,68,0.15); }
+    .gn-nbr-human:hover { box-shadow: 0 0 20px rgba(52,211,153,0.12); }
+
+    .gn-nbr-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+
+    .gn-nbr-rank { font-size: 0.65rem; font-weight: 700; color: var(--text-faint); width: 18px; }
+
+    .gn-nbr-badge {
+      font-size: 0.6rem; font-weight: 700; padding: 1px 6px;
+      border-radius: 999px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+
+    .gnb-ai    { background: var(--ai-dim); color: var(--ai); border: 1px solid var(--ai-border); }
+    .gnb-human { background: var(--human-dim); color: var(--human); border: 1px solid var(--human-border); }
+
+    .gn-nbr-sim { margin-left: auto; font-size: 0.62rem; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+
+    .gn-nbr-text { font-size: 0.72rem; color: var(--text-dim); line-height: 1.45; word-break: break-word; }
+
+    /* Meta node */
+    .gn-meta {
+      padding: 8px 14px;
+      display: flex; flex-direction: column; gap: 3px; align-items: center;
+      border-color: rgba(255,255,255,0.06);
+    }
+
+    .gn-time  { font-size: 0.68rem; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+    .gn-model { font-size: 0.68rem; color: var(--accent); }
+
+    /* ── SVG edge animations ─────────────────────────────────── */
+    @keyframes dashFlow {
+      to { stroke-dashoffset: -24; }
+    }
+
+    @keyframes dashFlowSlow {
+      to { stroke-dashoffset: -20; }
     }
 
     /* ── Spinner ────────────────────────────────────────────── */
     .spinner {
       width: 13px; height: 13px;
       border: 2px solid rgba(255,255,255,0.25);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.65s linear infinite;
-      flex-shrink: 0;
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.65s linear infinite; flex-shrink: 0;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Fade-in ─────────────────────────────────────────────── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .fade-up { animation: fadeUp 0.3s ease both; }
-
-    /* ── Detector breakdown ─────────────────────────────────── */
-    .detector-breakdown {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .detector-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .det-lbl {
-      font-size: 0.72rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      width: 36px;
-      color: var(--text-faint);
-    }
-
-    .det-bar-track {
-      flex: 1;
-      height: 5px;
-      background: var(--bg2);
-      border-radius: 999px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-
-    .det-bar-fill {
-      height: 100%;
-      border-radius: 999px;
-      transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
-    }
-
-    .det-bar-fill-knn { background: linear-gradient(90deg, #6366f1, #818cf8); }
-    .det-bar-fill-llm { background: linear-gradient(90deg, #8b5cf6, #c4b5fd); }
-
-    .det-pct {
-      font-size: 0.7rem;
-      font-variant-numeric: tabular-nums;
-      color: var(--text-dim);
-      width: 34px;
-      text-align: right;
-    }
-
-    .breakdown-title {
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--text-dim);
-      margin-bottom: 4px;
-    }
-
     /* ── Responsive ─────────────────────────────────────────── */
-    @media (max-width: 780px) {
+    @media (max-width: 900px) {
       main { grid-template-columns: 1fr; padding: 20px 16px 40px; }
       header { padding: 14px 20px; }
       .header-pill { display: none; }
+      .graph-canvas { min-height: 560px; }
     }
   </style>
 </head>
@@ -832,11 +554,11 @@
     <div id="errorMsg" style="display:none"></div>
   </div>
 
-  <!-- Results panel -->
-  <div class="panel">
+  <!-- Graph panel -->
+  <div class="panel panel-graph">
     <div class="panel-header">
       <div class="panel-icon panel-icon-result">◈</div>
-      <span class="panel-title">Results</span>
+      <span class="panel-title">Knowledge Graph</span>
     </div>
 
     <div id="placeholder" class="result-placeholder">
@@ -844,7 +566,20 @@
       <span class="placeholder-text">Enter a post and click Analyze</span>
     </div>
 
-    <div id="results" style="display:none"></div>
+    <div id="graphCanvas" class="graph-canvas" style="display:none">
+      <svg id="graphSvg" class="graph-svg">
+        <defs>
+          <filter id="edgeGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="nodeGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+      </svg>
+    </div>
   </div>
 </main>
 
@@ -916,7 +651,8 @@
     textInput.value = '';
     updateCounter();
     hideError();
-    document.getElementById('results').style.display = 'none';
+    graph.clear();
+    document.getElementById('graphCanvas').style.display = 'none';
     document.getElementById('placeholder').style.display = 'flex';
     textInput.focus();
   });
@@ -932,13 +668,9 @@
     btn.disabled = true;
     btn.innerHTML = '<div class="spinner"></div>Analyzing…';
     hideError();
-    document.getElementById('results').style.display = 'none';
-    document.getElementById('placeholder').style.display = 'flex';
 
     const payload = { text, model };
-    if (model === 'ensemble') {
-      payload.alpha = parseFloat(alphaSlider.value);
-    }
+    if (model === 'ensemble') payload.alpha = parseFloat(alphaSlider.value);
 
     try {
       const resp = await fetch(`${API}/api/predict`, {
@@ -952,140 +684,13 @@
         showError(detail);
         return;
       }
-      renderResults(await resp.json());
+      renderGraph(await resp.json());
     } catch (e) {
       showError('Network error: ' + e.message);
     } finally {
       btn.disabled = false;
       btn.textContent = 'Analyze';
     }
-  }
-
-  // ── Render ─────────────────────────────────────────────────
-  function renderResults(data) {
-    const isAI  = data.prediction === 'ai';
-    const pct   = Math.round(data.confidence * 100);
-    const hPct  = 100 - pct;
-
-    const nbrs     = data.neighbors || [];
-    const aiCount  = nbrs.filter(n => n.label === 'ai').length;
-    const humCount = nbrs.length - aiCount;
-
-    // Detector breakdown (ensemble only)
-    let breakdownHTML = '';
-    if (data.knn_confidence != null || data.llm_confidence != null) {
-      const knnPct = data.knn_confidence != null ? Math.round(data.knn_confidence * 100) : null;
-      const llmPct = data.llm_confidence != null ? Math.round(data.llm_confidence * 100) : null;
-      const alphaLabel = data.alpha_used != null ? `α=${data.alpha_used.toFixed(2)}` : '';
-      breakdownHTML = `
-        <div class="detector-breakdown fade-up" style="animation-delay:80ms">
-          <div class="breakdown-title">Detector breakdown ${alphaLabel ? `<span style="font-weight:400;color:var(--text-faint)">(${alphaLabel})</span>` : ''}</div>
-          ${knnPct != null ? `
-          <div class="detector-row">
-            <span class="det-lbl">KNN</span>
-            <div class="det-bar-track">
-              <div class="det-bar-fill det-bar-fill-knn" id="knnBar" style="width:0%"></div>
-            </div>
-            <span class="det-pct">${knnPct}% AI</span>
-          </div>` : ''}
-          ${llmPct != null ? `
-          <div class="detector-row">
-            <span class="det-lbl">LLM</span>
-            <div class="det-bar-track">
-              <div class="det-bar-fill det-bar-fill-llm" id="llmBar" style="width:0%"></div>
-            </div>
-            <span class="det-pct">${llmPct}% AI</span>
-          </div>` : ''}
-        </div>
-        <div class="divider"></div>
-      `;
-    }
-
-    const nbrsHTML = nbrs.length > 0 ? `
-      <div>
-        <div class="nbr-header">
-          <span class="nbr-title">Nearest Neighbors</span>
-          <div class="nbr-stats">
-            <span class="nbr-stat nbr-stat-ai">${aiCount} AI</span>
-            <span class="nbr-stat nbr-stat-human">${humCount} Human</span>
-          </div>
-        </div>
-        <div class="neighbors-list">
-          ${nbrs.map((n, i) => `
-            <div class="neighbor-card ${n.label === 'ai' ? 'card-ai' : 'card-human'} fade-up" style="animation-delay:${i * 40}ms">
-              <div class="neighbor-meta">
-                <span class="nbr-rank">#${i + 1}</span>
-                <span class="nbr-badge ${n.label === 'ai' ? 'nbr-badge-ai' : 'nbr-badge-human'}">${n.label}</span>
-                <span class="nbr-sim">sim ${n.similarity.toFixed(3)}</span>
-              </div>
-              <p class="nbr-text">${esc(n.text_snippet)}</p>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-      <div class="divider"></div>
-    ` : '';
-
-    const footerDelay = 80 + nbrs.length * 40;
-    const modelLabel  = data.alpha_used != null
-      ? `${data.model_used} · α=${data.alpha_used.toFixed(2)}`
-      : data.model_used;
-
-    document.getElementById('results').innerHTML = `
-      <div class="prediction-card ${isAI ? 'card-ai' : 'card-human'} fade-up">
-        <div class="pred-icon ${isAI ? 'pred-icon-ai' : 'pred-icon-human'}">${isAI ? '🤖' : '🧑'}</div>
-        <div class="pred-body">
-          <div class="pred-label">Verdict</div>
-          <div class="pred-verdict ${isAI ? 'pred-verdict-ai' : 'pred-verdict-human'}">${isAI ? 'AI-Generated' : 'Human-Written'}</div>
-        </div>
-        <div class="pred-pct ${isAI ? 'pred-pct-ai' : 'pred-pct-human'}">${pct}%</div>
-      </div>
-
-      <div class="conf-section fade-up" style="animation-delay:60ms">
-        <div class="conf-labels">
-          <span class="conf-title">Confidence breakdown</span>
-          <span class="conf-detail">${isAI ? 'AI' : 'Human'} · ${pct}%</span>
-        </div>
-        <div class="dual-bar">
-          <div class="dual-bar-ai"    id="dualAI"    style="width:0%"></div>
-          <div class="dual-bar-human" id="dualHuman" style="width:0%"></div>
-        </div>
-        <div class="dual-labels">
-          <span class="dual-lbl dual-lbl-ai">AI ${isAI ? pct : hPct}%</span>
-          <span class="dual-lbl dual-lbl-human">Human ${isAI ? hPct : pct}%</span>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      ${breakdownHTML}
-      ${nbrsHTML}
-
-      <div class="result-footer fade-up" style="animation-delay:${footerDelay}ms">
-        <span class="time-badge">⚡ ${data.processing_time_ms.toFixed(0)} ms</span>
-        <span class="model-badge">${modelLabel}</span>
-      </div>
-    `;
-
-    document.getElementById('placeholder').style.display = 'none';
-    document.getElementById('results').style.display = 'flex';
-
-    // Animate bars after paint
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const aiFrac  = isAI ? data.confidence : (1 - data.confidence);
-      const humFrac = 1 - aiFrac;
-      document.getElementById('dualAI').style.width    = `${(aiFrac  * 100).toFixed(1)}%`;
-      document.getElementById('dualHuman').style.width = `${(humFrac * 100).toFixed(1)}%`;
-
-      if (data.knn_confidence != null) {
-        const knnEl = document.getElementById('knnBar');
-        if (knnEl) knnEl.style.width = `${(data.knn_confidence * 100).toFixed(1)}%`;
-      }
-      if (data.llm_confidence != null) {
-        const llmEl = document.getElementById('llmBar');
-        if (llmEl) llmEl.style.width = `${(data.llm_confidence * 100).toFixed(1)}%`;
-      }
-    }));
   }
 
   // ── Utilities ──────────────────────────────────────────────
@@ -1105,11 +710,411 @@
     document.getElementById('errorMsg').style.display = 'none';
   }
 
+  // ══════════════════════════════════════════════════════════
+  //  KNOWLEDGE GRAPH ENGINE
+  // ══════════════════════════════════════════════════════════
+
+  class KnowledgeGraph {
+    constructor(canvas, svg) {
+      this.canvas = canvas;
+      this.svg    = svg;
+      this.nodes  = [];
+      this.edges  = [];
+      this.animId = null;
+      this.t      = 0;
+      this.mouseX = -9999;
+      this.mouseY = -9999;
+
+      canvas.addEventListener('mousemove', e => {
+        const r = canvas.getBoundingClientRect();
+        this.mouseX = e.clientX - r.left;
+        this.mouseY = e.clientY - r.top;
+      });
+      canvas.addEventListener('mouseleave', () => {
+        this.mouseX = -9999;
+        this.mouseY = -9999;
+      });
+    }
+
+    clear() {
+      if (this.animId) { cancelAnimationFrame(this.animId); this.animId = null; }
+      this.nodes = [];
+      this.edges = [];
+      // Keep defs, remove paths
+      const paths = this.svg.querySelectorAll('path, circle');
+      paths.forEach(p => p.remove());
+      // Remove node divs
+      this.canvas.querySelectorAll('.graph-node').forEach(el => el.remove());
+    }
+
+    addNode(id, html, tx, ty, classes = '', fixed = false) {
+      const el = document.createElement('div');
+      el.className = 'graph-node ' + classes;
+      el.innerHTML = html;
+      this.canvas.appendChild(el);
+
+      // Fixed nodes spawn at target; others scatter
+      const scatter = fixed ? 0 : 180;
+      const sx = tx + (Math.random() - 0.5) * scatter;
+      const sy = ty + (Math.random() - 0.5) * scatter;
+      el.style.left = sx + 'px';
+      el.style.top  = sy + 'px';
+
+      const node = {
+        id, el, fixed,
+        x: sx, y: sy,
+        vx: fixed ? 0 : (Math.random() - 0.5) * 3,
+        vy: fixed ? 0 : (Math.random() - 0.5) * 3,
+        targetX: tx, targetY: ty,
+        phase:     Math.random() * Math.PI * 2,
+        floatAmpX: fixed ? 0 : 3 + Math.random() * 4,
+        floatAmpY: fixed ? 0 : 2 + Math.random() * 3,
+        floatFreq: 0.28 + Math.random() * 0.22,
+      };
+      this.nodes.push(node);
+      return node;
+    }
+
+    addEdge(fromId, toId, stroke = 'rgba(99,102,241,0.4)', dashArr = '7 5') {
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', stroke);
+      path.setAttribute('stroke-width', '1.5');
+      path.setAttribute('stroke-dasharray', dashArr);
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('filter', 'url(#edgeGlow)');
+      path.style.animation = `dashFlow ${1.8 + Math.random() * 1.2}s linear infinite`;
+
+      // Glow duplicate (blurred, behind)
+      const glow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      glow.setAttribute('fill', 'none');
+      glow.setAttribute('stroke', stroke);
+      glow.setAttribute('stroke-width', '3');
+      glow.setAttribute('stroke-dasharray', dashArr);
+      glow.setAttribute('stroke-linecap', 'round');
+      glow.setAttribute('opacity', '0.25');
+      glow.style.animation = `dashFlow ${1.8 + Math.random() * 1.2}s linear infinite`;
+
+      this.svg.insertBefore(glow, this.svg.firstChild);
+      this.svg.appendChild(path);
+
+      this.edges.push({ fromId, toId, path, glow });
+    }
+
+    _updatePhysics() {
+      for (const n of this.nodes) {
+        if (n.fixed) {
+          // Snap tightly to target, no float, no mouse repulsion
+          n.vx += (n.targetX - n.x) * 0.28;
+          n.vy += (n.targetY - n.y) * 0.28;
+          n.vx *= 0.72;
+          n.vy *= 0.72;
+          n.x  += n.vx;
+          n.y  += n.vy;
+          n.el.style.left = n.x + 'px';
+          n.el.style.top  = n.y + 'px';
+          continue;
+        }
+
+        const kSpring = 0.055;
+        const damp    = 0.76;
+
+        const fx = Math.sin(this.t * n.floatFreq + n.phase)            * n.floatAmpX;
+        const fy = Math.cos(this.t * n.floatFreq * 0.68 + n.phase + 1) * n.floatAmpY;
+
+        const tx = n.targetX + fx;
+        const ty = n.targetY + fy;
+
+        // Mouse repulsion
+        const dx   = n.x - this.mouseX;
+        const dy   = n.y - this.mouseY;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        let rx = 0, ry = 0;
+        if (dist < 140) {
+          const f = Math.pow((140 - dist) / 140, 1.6) * 22;
+          rx = (dx / dist) * f;
+          ry = (dy / dist) * f;
+        }
+
+        n.vx += (tx - n.x + rx) * kSpring;
+        n.vy += (ty - n.y + ry) * kSpring;
+        n.vx *= damp;
+        n.vy *= damp;
+        n.x  += n.vx;
+        n.y  += n.vy;
+
+        n.el.style.left = n.x + 'px';
+        n.el.style.top  = n.y + 'px';
+      }
+    }
+
+    _updateEdges() {
+      for (const e of this.edges) {
+        const from = this.nodes.find(n => n.id === e.fromId);
+        const to   = this.nodes.find(n => n.id === e.toId);
+        if (!from || !to) continue;
+
+        // Perpendicular bezier bulge
+        const mx   = (from.x + to.x) / 2;
+        const my   = (from.y + to.y) / 2;
+        const dx   = to.x - from.x;
+        const dy   = to.y - from.y;
+        const len  = Math.sqrt(dx * dx + dy * dy) || 1;
+        const bulge = Math.min(len * 0.22, 45);
+        const cx   = mx - (dy / len) * bulge;
+        const cy   = my + (dx / len) * bulge;
+
+        const d = `M ${from.x.toFixed(1)} ${from.y.toFixed(1)} Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${to.x.toFixed(1)} ${to.y.toFixed(1)}`;
+        e.path.setAttribute('d', d);
+        e.glow.setAttribute('d', d);
+      }
+    }
+
+    start() {
+      const loop = () => {
+        this.t += 0.016;
+        this._updatePhysics();
+        this._updateEdges();
+        this.animId = requestAnimationFrame(loop);
+      };
+      loop();
+    }
+
+    build(data) {
+      const W = this.canvas.clientWidth  || 600;
+      const H = this.canvas.clientHeight || 480;
+
+      // confidence is always P(AI) per schema — never invert it
+      const aiPct  = Math.round(data.confidence * 100);
+      const humPct = 100 - aiPct;
+      const isAI   = aiPct >= 50;
+
+      const hasKNN = data.knn_confidence != null;
+      const hasLLM = data.llm_confidence != null;
+      const hasEns = hasKNN || hasLLM;
+      const nbrs   = data.neighbors || [];
+
+      const edgeAI    = 'rgba(239,68,68,0.45)';
+      const edgeHuman = 'rgba(52,211,153,0.4)';
+      const edgeBlue  = 'rgba(99,102,241,0.45)';
+      const edgePurp  = 'rgba(139,92,246,0.45)';
+      const edgeDim   = 'rgba(255,255,255,0.12)';
+      const edgeColor = isAI ? edgeAI : edgeHuman;
+
+      // ── Root / verdict ──────────────────────────────────────
+      this.addNode('verdict',
+        `<div class="gn-icon ${isAI ? 'gni-ai' : 'gni-human'}">${isAI ? '🤖' : '🧑'}</div>
+         <div class="gn-label">Verdict</div>
+         <div class="gn-verdict ${isAI ? 'gnv-ai' : 'gnv-human'}">${isAI ? 'AI-Generated' : 'Human-Written'}</div>`,
+        W * 0.5, H * 0.30,
+        `gn-root ${isAI ? 'gn-ai' : 'gn-human'}`
+      );
+
+      // ── Confidence ──────────────────────────────────────────
+      this.addNode('conf',
+        `<div class="gn-label-sm">Confidence</div>
+         <div class="gn-dual-bar">
+           <div class="gn-bar-ai"    id="gBarAI"    style="width:0%"></div>
+           <div class="gn-bar-human" id="gBarHuman" style="width:0%"></div>
+         </div>
+         <div class="gn-dual-labels">
+           <span class="gn-lbl-ai">AI ${aiPct}%</span>
+           <span class="gn-lbl-human">Human ${humPct}%</span>
+         </div>`,
+        W * 0.82, H * 0.18,
+        'gn-conf'
+      );
+      this.addEdge('verdict', 'conf', edgeColor);
+
+      // ── KNN detector ────────────────────────────────────────
+      if (hasKNN) {
+        const kp = Math.round(data.knn_confidence * 100);
+        this.addNode('knn',
+          `<div class="gn-det-label">KNN</div>
+           <div class="gn-det-pct">${kp}%</div>
+           <div class="gn-det-bar-track"><div class="gn-det-bar-fill gn-det-knn" id="gKNNBar" style="width:0%"></div></div>
+           <div class="gn-det-sub">AI confidence</div>`,
+          W * 0.14, H * 0.15,
+          'gn-detector gn-knn'
+        );
+      }
+
+      // ── LLM detector ────────────────────────────────────────
+      if (hasLLM) {
+        const lp = Math.round(data.llm_confidence * 100);
+        this.addNode('llm',
+          `<div class="gn-det-label">LLM</div>
+           <div class="gn-det-pct">${lp}%</div>
+           <div class="gn-det-bar-track"><div class="gn-det-bar-fill gn-det-llm" id="gLLMBar" style="width:0%"></div></div>
+           <div class="gn-det-sub">AI confidence</div>`,
+          W * 0.14, H * 0.55,
+          'gn-detector gn-llm'
+        );
+      }
+
+      // ── Ensemble calc node (fixed) ───────────────────────────
+      if (hasEns) {
+        const alpha = data.alpha_used != null ? data.alpha_used : 0.5;
+        const kp    = hasKNN ? Math.round(data.knn_confidence * 100) : null;
+        const lp    = hasLLM ? Math.round(data.llm_confidence * 100) : null;
+
+        let calcHTML = '';
+        if (kp != null && lp != null) {
+          const ensScore = Math.round((alpha * data.knn_confidence + (1 - alpha) * data.llm_confidence) * 100);
+          calcHTML = `
+            <div class="gn-ens-row">
+              <span class="gn-ens-alpha">${alpha.toFixed(2)}</span> × <span class="gn-ens-kval">${kp}%</span>
+              &nbsp;+&nbsp;
+              <span class="gn-ens-alpha">${(1 - alpha).toFixed(2)}</span> × <span class="gn-ens-lval">${lp}%</span>
+            </div>
+            <div class="gn-ens-divider"></div>
+            <div class="gn-ens-result">${ensScore}% AI</div>`;
+        } else if (kp != null) {
+          calcHTML = `<div class="gn-ens-result">${kp}% AI</div>`;
+        } else {
+          calcHTML = `<div class="gn-ens-result">${lp}% AI</div>`;
+        }
+
+        this.addNode('ensemble',
+          `<div class="gn-ens-title">Ensemble Score</div>
+           <div class="gn-ens-formula">α · KNN + (1−α) · LLM</div>
+           ${calcHTML}`,
+          W * 0.16, H * 0.35,
+          'gn-ensemble', true   // fixed = true
+        );
+
+        if (hasKNN) this.addEdge('knn',      'ensemble', edgeBlue);
+        if (hasLLM) this.addEdge('llm',      'ensemble', edgePurp);
+        this.addEdge('ensemble', 'verdict', 'rgba(99,102,241,0.6)', '8 4');
+      }
+
+      // ── Neighbor nodes — proper 2-row grid ───────────────────
+      if (nbrs.length > 0) {
+        const ROW  = 5;                          // max cards per row
+        const rows = Math.ceil(nbrs.length / ROW);
+        const xPad = W * 0.06;
+        const xSpan = W - xPad * 2;
+        // Push rows into lower third; if 2 rows need more vertical room
+        const yFirst = rows > 1 ? H * 0.65 : H * 0.74;
+        const yStep  = H * 0.155;
+
+        nbrs.forEach((n, i) => {
+          const row     = Math.floor(i / ROW);
+          const col     = i % ROW;
+          const rowLen  = Math.min(ROW, nbrs.length - row * ROW);
+          // Centre each row independently
+          const colSpan = rowLen === 1 ? 0 : xSpan / (rowLen - 1);
+          const rowStart = rowLen === 1 ? W / 2 : xPad + (xSpan - colSpan * (rowLen - 1)) / 2;
+          const nx = rowLen === 1 ? W / 2 : rowStart + col * colSpan;
+          const ny = yFirst + row * yStep;
+
+          const isNA = n.label === 'ai';
+          const snip = esc(n.text_snippet).substring(0, 42) + (n.text_snippet.length > 42 ? '…' : '');
+
+          this.addNode(`nbr${i}`,
+            `<div class="gn-nbr-meta">
+               <span class="gn-nbr-rank">#${i+1}</span>
+               <span class="gn-nbr-badge ${isNA ? 'gnb-ai' : 'gnb-human'}">${n.label}</span>
+               <span class="gn-nbr-sim">${n.similarity.toFixed(3)}</span>
+             </div>
+             <p class="gn-nbr-text">${snip}</p>`,
+            nx, ny,
+            `gn-neighbor ${isNA ? 'gn-nbr-ai' : 'gn-nbr-human'}`
+          );
+
+          const parent = hasKNN ? 'knn' : (hasEns ? 'ensemble' : 'verdict');
+          this.addEdge(parent, `nbr${i}`, isNA ? 'rgba(239,68,68,0.28)' : 'rgba(52,211,153,0.28)', '5 6');
+        });
+      }
+
+      // ── Meta node — fixed, bottom-centre, below neighbour rows ─
+      const rows = Math.ceil((nbrs.length || 0) / 5);
+      const metaY = nbrs.length > 0
+        ? (rows > 1 ? H * 0.965 : H * 0.915)
+        : H * 0.92;
+
+      const modelLabel = data.alpha_used != null
+        ? `${data.model_used} · α=${data.alpha_used.toFixed(2)}`
+        : data.model_used;
+
+      this.addNode('meta',
+        `<span class="gn-time">⚡ ${data.processing_time_ms.toFixed(0)} ms</span>
+         <span class="gn-model">${esc(modelLabel)}</span>`,
+        W * 0.50, metaY,
+        'gn-meta', true   // fixed
+      );
+      this.addEdge('verdict', 'meta', edgeDim, '4 6');
+
+      // ── Animate bars after paint ──────────────────────────────
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const bAI    = document.getElementById('gBarAI');
+        const bHuman = document.getElementById('gBarHuman');
+        if (bAI)    bAI.style.width    = `${aiPct}%`;
+        if (bHuman) bHuman.style.width = `${humPct}%`;
+
+        if (hasKNN) {
+          const el = document.getElementById('gKNNBar');
+          if (el) el.style.width = `${(data.knn_confidence * 100).toFixed(1)}%`;
+        }
+        if (hasLLM) {
+          const el = document.getElementById('gLLMBar');
+          if (el) el.style.width = `${(data.llm_confidence * 100).toFixed(1)}%`;
+        }
+      }));
+    }
+  }
+
+  // ── Instantiate graph ──────────────────────────────────────
+  const graph = new KnowledgeGraph(
+    document.getElementById('graphCanvas'),
+    document.getElementById('graphSvg')
+  );
+
+  // ── Render ─────────────────────────────────────────────────
+  function renderGraph(data) {
+    graph.clear();
+
+    document.getElementById('placeholder').style.display  = 'none';
+    document.getElementById('graphCanvas').style.display  = 'block';
+
+    // Build after the canvas is visible so clientWidth is correct
+    requestAnimationFrame(() => {
+      graph.build(data);
+      graph.start();
+    });
+  }
+
   // ── Events ─────────────────────────────────────────────────
   document.getElementById('submitBtn').addEventListener('click', analyze);
   textInput.addEventListener('keydown', e => {
     if (e.ctrlKey && e.key === 'Enter') analyze();
   });
+
+  // Rebuild on resize to recompute positions
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (graph.nodes.length > 0) {
+        // Just reposition targets without losing the current graph data
+        // We store lastData on render so we can rebuild
+        if (graph._lastData) {
+          graph.clear();
+          requestAnimationFrame(() => {
+            graph.build(graph._lastData);
+            graph.start();
+          });
+        }
+      }
+    }, 250);
+  });
+
+  // Patch build to store lastData
+  const _origBuild = graph.build.bind(graph);
+  graph.build = function(data) {
+    this._lastData = data;
+    _origBuild(data);
+  };
 
   loadModels();
 </script>
