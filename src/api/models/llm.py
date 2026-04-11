@@ -33,6 +33,18 @@ from src.data_pipeline.build_training_data import (  # noqa: E402
 K_RAG_NEIGHBORS = 5   # how many neighbors to pass as RAG context
 
 
+def build_rag_pairs_from_neighbors(
+    neighbors: List[Dict[str, Any]],
+    limit: int = K_RAG_NEIGHBORS,
+) -> List[tuple[str, str]]:
+    """Prefer full retrieved text so runtime prompt matches training format."""
+    pairs: List[tuple[str, str]] = []
+    for neighbor in neighbors[:limit]:
+        text = neighbor.get("full_text") or neighbor.get("text_snippet") or ""
+        pairs.append((text, neighbor["label"]))
+    return pairs
+
+
 class LlamaDetector(BaseDetector):
     """Fine-tuned Llama 3.1 8B (LoRA) classifier with CUDA → MLX → CPU fallback."""
 
@@ -175,7 +187,7 @@ class LlamaDetector(BaseDetector):
                 nbrs = (neighbors[idx] if neighbors is not None and idx < len(neighbors)
                         else None)
                 if nbrs:
-                    rag_pairs = [(n["text_snippet"], n["label"]) for n in nbrs[:K_RAG_NEIGHBORS]]
+                    rag_pairs = build_rag_pairs_from_neighbors(nbrs)
                     instruction = build_rag_instruction(text, rag_pairs)
                 else:
                     instruction = build_plain_instruction(text)

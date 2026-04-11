@@ -23,6 +23,37 @@ EMBED_MAX_RETRIES = 3
 SNIPPET_MAX_CHARS = 200
 
 
+def compute_weighted_knn_result(
+    neighbors: List[Dict[str, Any]],
+) -> tuple[str, float]:
+    """Return cosine-weighted KNN label and P(ai)."""
+    ai_weight = 0.0
+    human_weight = 0.0
+    ai_count = 0
+    human_count = 0
+
+    for neighbor in neighbors:
+        label = neighbor["label"]
+        similarity = max(0.0, float(neighbor["similarity"]))
+        if label == "ai":
+            ai_weight += similarity
+            ai_count += 1
+        else:
+            human_weight += similarity
+            human_count += 1
+
+    total_weight = ai_weight + human_weight
+    if total_weight > 0:
+        ai_confidence = ai_weight / total_weight
+    else:
+        total_count = ai_count + human_count
+        ai_confidence = (ai_count / total_count) if total_count > 0 else 0.5
+
+    ai_confidence = round(ai_confidence, 4)
+    prediction = "ai" if ai_confidence >= 0.5 else "human"
+    return prediction, ai_confidence
+
+
 class KNNDetector(BaseDetector):
     """K-Nearest Neighbors majority-vote classifier over a FAISS train index."""
 
@@ -37,13 +68,16 @@ class KNNDetector(BaseDetector):
         from google import genai
 
         print("KNNDetector: loading FAISS index...")
+        print(f"  Index path: {index_path}")
         self._index = faiss.read_index(index_path)
         print(f"  Index size: {self._index.ntotal} vectors")
 
         print("KNNDetector: loading train indices mapping...")
+        print(f"  Train indices path: {train_indices_path}")
         self._train_indices = np.load(train_indices_path)
 
         print("KNNDetector: loading corpus...")
+        print(f"  Corpus path: {corpus_path}")
         self._corpus: List[Dict] = []
         with open(corpus_path, "r", encoding="utf-8") as f:
             for line in f:
@@ -131,8 +165,6 @@ class KNNDetector(BaseDetector):
             query = embeddings[i: i + 1]
             scores, idx_result = self._index.search(query, self._k)
 
-            ai_votes = 0
-            total_votes = 0
             neighbor_list = []
 
             for j, local_idx in enumerate(idx_result[0]):
@@ -143,29 +175,32 @@ class KNNDetector(BaseDetector):
                 label = record["label"]
                 similarity = float(scores[0][j])
 
-                if label == "ai":
-                    ai_votes += 1
-                total_votes += 1
-
                 neighbor_list.append({
+                    "full_text": record["text"],
                     "text_snippet": record["text"][:SNIPPET_MAX_CHARS],
                     "label": label,
-                    "similarity": round(similarity, 4),
+                    "similarity": similarity,
                 })
 
-            if total_votes == 0:
+            if not neighbor_list:
                 # No valid FAISS results — safe default
                 confidence, prediction = 0.5, "human"
             else:
-                confidence = ai_votes / total_votes
-                # Tie-break → "ai" (matches knn_baseline.py convention)
-                prediction = "ai" if ai_votes >= (total_votes - ai_votes) else "human"
+                prediction, confidence = compute_weighted_knn_result(neighbor_list)
 
-            confidence = round(confidence, 4)
+            display_neighbors = [
+                {
+                    "full_text": n["full_text"],
+                    "text_snippet": n["text_snippet"],
+                    "label": n["label"],
+                    "similarity": round(float(n["similarity"]), 4),
+                }
+                for n in neighbor_list
+            ]
             results.append({
                 "prediction": prediction,
                 "confidence": confidence,
-                "neighbors": neighbor_list,
+                "neighbors": display_neighbors,
                 "knn_confidence": confidence,
                 "llm_confidence": None,
                 "alpha_used": 1.0,

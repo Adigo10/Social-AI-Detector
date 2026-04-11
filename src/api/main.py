@@ -41,8 +41,8 @@ PROCESSED_DIR = PROJECT_ROOT / "data" / "processed" / "core"
 MODELS_DIR = PROJECT_ROOT / "models"
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
 
-INDEX_PATH = str(PROCESSED_DIR / "corpus.index")
-TRAIN_INDICES_PATH = str(PROCESSED_DIR / "train_indices.npy")
+INDEX_PATH = str(PROCESSED_DIR / "corpus_balanced.index")
+TRAIN_INDICES_PATH = str(PROCESSED_DIR / "train_indices_balanced.npy")
 CORPUS_PATH = str(PROCESSED_DIR / "corpus.jsonl")
 LLAMA_ADAPTER_PATH = str(MODELS_DIR / "llama_custom")
 LLAMA_MLX_PATH = str(MODELS_DIR / "llama_mlx")
