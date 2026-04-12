@@ -235,21 +235,28 @@ class LlamaDetector(BaseDetector):
             )
 
         first_logits = out.scores[0][0]   # shape: (vocab_size,)
+        ai_logit = first_logits[self._ai_token_id].item()
+        human_logit = first_logits[self._human_token_id].item()
+
         probs = F.softmax(
-            torch.tensor(
-                [first_logits[self._ai_token_id].item(),
-                 first_logits[self._human_token_id].item()],
-                dtype=torch.float32,
-            ),
+            torch.tensor([ai_logit, human_logit], dtype=torch.float32),
             dim=0,
         )
-        confidence = round(float(probs[0]), 4)   # P(ai)
+        ai_prob = float(probs[0])   # P(ai)
+
+        # Determine prediction based on which token has higher logit
+        is_ai = ai_logit > human_logit
+        prediction = "ai" if is_ai else "human"
+
+        # Confidence should be the probability of the predicted class
+        confidence = round(ai_prob if is_ai else (1 - ai_prob), 4)
+
         return {
-            "prediction": "ai" if confidence >= 0.5 else "human",
+            "prediction": prediction,
             "confidence": confidence,
             "neighbors": [],
             "knn_confidence": None,
-            "llm_confidence": confidence,
+            "llm_confidence": ai_prob,
             "alpha_used": 0.0,
         }
 
@@ -277,13 +284,20 @@ class LlamaDetector(BaseDetector):
         max_l = max(ai_logit, human_logit)
         exp_ai = math.exp(ai_logit - max_l)
         exp_human = math.exp(human_logit - max_l)
-        confidence = round(exp_ai / (exp_ai + exp_human), 4)   # P(ai)
+        ai_prob = exp_ai / (exp_ai + exp_human)   # P(ai)
+
+        # Determine prediction based on which token has higher probability
+        is_ai = ai_logit > human_logit
+        prediction = "ai" if is_ai else "human"
+
+        # Confidence should be the probability of the predicted class
+        confidence = round(ai_prob if is_ai else (1 - ai_prob), 4)
 
         return {
-            "prediction": "ai" if confidence >= 0.5 else "human",
+            "prediction": prediction,
             "confidence": confidence,
             "neighbors": [],
             "knn_confidence": None,
-            "llm_confidence": confidence,
+            "llm_confidence": ai_prob,
             "alpha_used": 0.0,
         }
