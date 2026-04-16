@@ -80,7 +80,7 @@
 
 \setcounter{secnumdepth}{0} %May be changed to 1 or 2 if section numbers are desired.
 
-\title{Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation}
+\title{Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification}
 
 \author{
     Balasubramoni Sneha,
@@ -105,68 +105,91 @@
 \maketitle
 
 \begin{abstract}
-This is the Abstract section for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation. Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation is the focus of this work.
+Large language models can now generate text that is nearly indistinguishable from human writing, and the proliferation of such content on social media platforms raises serious concerns about misinformation, opinion manipulation, and automated spam. Existing detection methods---including neural classifiers, zero-shot statistical tests, and watermarking---typically target a single generator and degrade when confronted with text from unseen models or adversarial perturbations. We propose a hybrid detection framework that combines QLoRA-fine-tuned large language models (Qwen 2.5-32B) with retrieval-augmented classification. At inference time, the system retrieves the most similar labeled texts from a FAISS-indexed database of approximately 500K examples embedded with Gemini Embedding 2 vectors, and provides them as evidence context to the fine-tuned classifier. This design enables the retrieval component to adapt to new generators by updating the database alone, while the fine-tuned model provides strong discriminative reasoning over both the target text and retrieved evidence. We evaluate multiple model configurations---including fine-tuning-only, retrieval-only, and combined variants using both LLaMA and Qwen as base models---across five test scenarios: standard, cross-model, cross-platform, adversarial (RAID benchmark), and short-text, using TPR@1\%FPR as the primary metric. Our systematic ablation quantifies the complementary benefits of fine-tuning and retrieval-augmented classification for robust AI-generated text detection across diverse generators and social media platforms.
 \end{abstract}
 
 \section{Introduction}
 
-This is the Introduction section for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation. Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation motivates the work described here.
+Large language models (LLMs) such as GPT-4 \cite{openai2023gpt4} and Qwen \cite{qwen2024} can now generate text that is virtually indistinguishable from human writing across a wide range of domains and styles. Social media platforms---including Twitter, Reddit, and Telegram---are particularly vulnerable to misuse of these capabilities due to their high posting volume, low editorial oversight, and broad societal reach. The proliferation of AI-generated content on these platforms raises serious concerns about misinformation campaigns, opinion manipulation, and automated spam \cite{goldstein2023}, making reliable detection of machine-generated text an increasingly urgent problem.
+
+A variety of detection approaches have been proposed. Statistical methods such as GLTR \cite{gehrmann2019gltr} analyze token-level likelihood under a reference language model. Neural classifiers, exemplified by the RoBERTa-based GPT-2 detector \cite{solaiman2019release}, learn discriminative features from labeled data. Zero-shot methods like DetectGPT \cite{mitchell2023detectgpt} avoid generator-specific training by exploiting probability curvature properties. Watermarking techniques \cite{kirchenbauer2023watermark} embed detectable signals during generation. However, a recurring limitation is that these methods are typically developed and evaluated against a single generator, and their performance degrades substantially when confronted with text from unseen AI models or adversarial perturbations \cite{dugan2024raid, sadasivan2023}.
+
+To address this generalization challenge, we propose a hybrid detection framework that combines two complementary strategies. First, we fine-tune large language models (LLaMA and Qwen 2.5-32B) using QLoRA \cite{dettmers2023qlora, hu2022lora}, which adapts only approximately 1\% of the model's parameters for binary classification of AI-generated versus human-written text. Second, we construct a retrieval-augmented classification pipeline: a corpus of approximately 500K labeled texts is embedded into 768-dimensional vectors using Gemini Embedding 2 and indexed with FAISS \cite{johnson2019faiss} for efficient cosine similarity search. At inference time, the $k$ most similar labeled texts are retrieved and provided as evidence context to the fine-tuned classifier. This design allows the retrieval component to adapt to new AI generators simply by adding their outputs to the database, without requiring model retraining, while the fine-tuned LLM provides strong discriminative reasoning over both the target text and retrieved evidence.
+
+We make the following contributions:
+\begin{itemize}
+    \item We propose a hybrid retrieval-augmented fine-tuning framework that combines QLoRA-adapted LLMs with embedding-based retrieval for AI-generated text detection, leveraging the complementary strengths of discriminative fine-tuning and adaptive retrieval.
+    \item We conduct a comprehensive evaluation across five challenging test scenarios---standard, cross-model, cross-platform, adversarial (RAID benchmark), and short-text---using three diverse datasets: MultiSocial \cite{multisocial2025} and HC3 \cite{guo2023hc3} for training and evaluation, and RAID \cite{dugan2024raid} for adversarial evaluation.
+    \item We present a systematic ablation study comparing fine-tuning-only, retrieval-only, and combined configurations across multiple base models, isolating the individual and combined contributions of each component as measured by TPR@1\%FPR, AUROC, and Macro-F1.
+\end{itemize}
+
+The remainder of this paper is organized as follows. The next section surveys related work on AI text detection, retrieval-augmented methods, and robustness evaluation. The Approach section describes our method, including the retrieval pipeline and fine-tuning procedure. The Experiments section presents the experimental setup, datasets, and results. The Analysis section provides discussion, and the final section concludes.
 
 \section{Related Work}
 
-This is the Related Work section for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation. Prior work related to Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation is surveyed here.
+\paragraph{AI-Generated Text Detection.}
+Detecting machine-generated text has been studied through several complementary paradigms. Statistical approaches such as GLTR \cite{gehrmann2019gltr} visualize per-token likelihood under a language model to highlight unlikely word choices, providing an interpretable but coarse detection signal. Neural classifiers, most notably the RoBERTa-based detector released alongside GPT-2 \cite{solaiman2019release}, achieve strong accuracy on the generator they were trained on but degrade substantially when applied to text from newer or different models. Zero-shot methods address this limitation by avoiding generator-specific training: DetectGPT \cite{mitchell2023detectgpt} exploits the observation that model-generated text tends to lie in regions of negative log-probability curvature, and Fast-DetectGPT \cite{bao2024fastdetectgpt} reduces the computational cost of this approach via conditional probability estimation. Watermarking techniques \cite{kirchenbauer2023watermark} embed statistical signals during generation that can later be detected, but require cooperation from model providers and cannot be applied retroactively to existing content. A persistent limitation across these methods is that they are typically trained or calibrated on a single generator and evaluated within the same distribution, leaving cross-model generalization largely unaddressed. Our work tackles this gap by augmenting a fine-tuned classifier with retrieval-based evidence drawn from a multi-generator corpus.
+
+\paragraph{Retrieval-Augmented Methods.}
+Retrieval-augmented approaches to NLP were popularized by \citet{lewis2020rag}, who combined a dense retriever with a sequence-to-sequence generator for knowledge-intensive tasks. Subsequent work has extended retrieval augmentation to language model pre-training \cite{guu2020realm} and has shown that nearest-neighbor retrieval over a datastore can improve language modeling without additional training \cite{khandelwal2020knnlm}. Efficient similarity search at the scale of millions of vectors is enabled by libraries such as FAISS \cite{johnson2019faiss}. While most retrieval-augmented methods focus on improving generation quality or perplexity, their application to classification tasks remains underexplored. In our framework, we apply retrieval augmentation to binary classification: retrieved labeled examples serve as evidence for the classifier rather than as seeds for text generation, providing both an interpretability benefit and a mechanism for adapting to new generators by updating the retrieval database alone.
+
+\paragraph{Social Media Text and Cross-Platform Detection.}
+Social media text presents distinct challenges for AI-generated text detection: posts are typically short, informal, multilingual, and shaped by platform-specific conventions such as hashtags, mentions, and character limits. Prior work on social bot detection \cite{cresci2020} has focused on account-level behavioral signals rather than text-level linguistic analysis. Concerns about AI-driven influence operations on social platforms have been raised by \citet{goldstein2023}, yet most detection research evaluates on long-form, formal domains such as news articles or academic writing. The MultiSocial benchmark \cite{multisocial2025} addresses this gap by providing labeled AI-generated and human-written texts across five social media platforms, seven AI models, and 22 languages. We build on this resource and additionally incorporate the HC3 corpus \cite{guo2023hc3} to evaluate cross-platform transfer, an axis that remains understudied in the detection literature.
+
+\paragraph{Robustness and Adversarial Evaluation.}
+The robustness of AI text detectors has come under scrutiny as adversarial strategies have proven effective at evading them. \citet{sadasivan2023} argue that reliable detection may become fundamentally difficult as language models improve, while \citet{krishna2023paraphrase} demonstrate that simple paraphrasing attacks can defeat most detectors---but also show that retrieval-based methods offer an effective defense, a finding that directly motivates our approach. The RAID benchmark \cite{dugan2024raid} formalizes adversarial evaluation with 11 generators and 12 attack types, revealing that many detectors lose significant accuracy under attack. Additionally, \citet{liang2023bias} highlight that existing detectors exhibit bias against non-native English writers, raising fairness concerns for deployment. Rather than evaluating along a single robustness axis, we systematically assess performance across four dimensions---cross-model, cross-platform, adversarial, and short-text---to provide a more complete picture of detector reliability.
 
 \section{Approach}
 
-This is the Approach section for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation. We describe the methods used in Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation.
+This is the Approach section for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification. We describe the methods used in Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification.
 
-\subsection{LLAMA}
+\subsection{LLaMA}
 
-This is the LLAMA subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation.
+This is the LLaMA subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification.
 
-\subsection{LLAMA + RAG}
+\subsection{LLaMA + Retrieval-Augmented Classification}
 
-This is the LLAMA + RAG subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation.
+This is the LLaMA + Retrieval-Augmented Classification subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification.
 
 \subsection{Qwen}
 
-This is the Qwen subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation.
+This is the Qwen subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification.
 
-\subsection{Qwen + RAG}
+\subsection{Qwen + Retrieval-Augmented Classification}
 
-This is the Qwen + RAG subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation.
+This is the Qwen + Retrieval-Augmented Classification subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification.
 
 \subsection{Simple KNN Voting}
 
-This is the Simple KNN Voting subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation.
+This is the Simple KNN Voting subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification.
 
 \section{Experiments}
 
-This is the Experiments section for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation.
+This is the Experiments section for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification.
 
 \subsection{Data}
 
-This is the Data subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation.
+This is the Data subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification.
 
 \subsection{Evaluation Method}
 
-This is the Evaluation Method subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation.
+This is the Evaluation Method subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification.
 
 \subsection{Model Settings}
 
-This is the Model Settings subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation.
+This is the Model Settings subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification.
 
 \subsection{Results}
 
-This is the Results subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation.
+This is the Results subsection for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification.
 
 \section{Analysis}
 
-This is the Analysis section for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation.
+This is the Analysis section for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification.
 
 \section{Conclusion}
 
-This is the Conclusion section for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Generation.
+This is the Conclusion section for Detecting AI-Generated Text Using Fine-Tuned LLMs and Retrieval-Augmented Classification.
 
 \bibliography{aaai2026}
 
