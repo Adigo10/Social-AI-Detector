@@ -145,4 +145,9 @@ whatsapp/
 # ============================================================
 *.aux
 *.out
+*.bbl
+*.blg
+
+# Generated PDFs for the current CameraReady LaTeX build
+report/AuthorKit26/CameraReady/LaTeX/*.pdf
 
