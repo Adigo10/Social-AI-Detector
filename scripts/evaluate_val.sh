@@ -29,10 +29,11 @@ module load cuda/12.8.0
 eval "$(conda shell.bash hook)"
 conda activate llama-ft
 
-cd ~/llm-project/Social-AI-Detector
+REPO_DIR="${REPO_DIR:-$HOME/llm}"
+cd "$REPO_DIR"
 
 # ---- Config ----
-MODEL_PATH="${MODEL_PATH:-checkpoints/llama-rag/final}"
+MODEL_PATH="${MODEL_PATH:-checkpoints/llama-rag/checkpoint-6000}"
 VAL_FILE="${VAL_FILE:-data/processed/training/val_balanced_with_rag.jsonl}"
 MAX_SAMPLES="${MAX_SAMPLES:-}"
 MAX_SEQ_LENGTH="${MAX_SEQ_LENGTH:-2048}"
